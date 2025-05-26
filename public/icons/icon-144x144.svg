@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="144" height="144" viewBox="0 0 144 144" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="72" cy="72" r="72" fill="#3b82f6"/>
+  
+  <!-- Romanian flag stripes -->
+  <rect x="28.8" y="43.199999999999996" width="28.799999999999997" height="57.6" fill="#002b7f"/>
+  <rect x="57.599999999999994" y="43.199999999999996" width="28.799999999999997" height="57.6" fill="#fcd116"/>
+  <rect x="86.39999999999999" y="43.199999999999996" width="28.799999999999997" height="57.6" fill="#ce1126"/>
+  
+  <!-- Document icon -->
+  <rect x="36" y="21.599999999999998" width="72" height="100.8" rx="7.2" fill="white" opacity="0.9"/>
+  <rect x="43.199999999999996" y="36" width="57.6" height="7.2" fill="#3b82f6"/>
+  <rect x="43.199999999999996" y="50.4" width="43.199999999999996" height="4.32" fill="#666"/>
+  <rect x="43.199999999999996" y="60.48" width="50.4" height="4.32" fill="#666"/>
+  <rect x="43.199999999999996" y="70.56" width="36" height="4.32" fill="#666"/>
+</svg>

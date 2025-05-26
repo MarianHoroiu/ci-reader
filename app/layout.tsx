@@ -83,10 +83,22 @@ export default function RootLayout({
   return (
     <html lang="en" className={inter.variable}>
       <head>
-        {/* PWA manifest will be added in future tasks */}
+        {/* PWA Manifest */}
+        <link rel="manifest" href="/manifest.json" />
+
+        {/* Icons */}
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" href="/icon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+        {/* iOS specific meta tags */}
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="ID Processor" />
+
+        {/* Microsoft specific meta tags */}
+        <meta name="msapplication-TileColor" content="#3b82f6" />
+        <meta name="msapplication-config" content="/browserconfig.xml" />
       </head>
       <body className="font-sans antialiased bg-gray-50 text-gray-900">
         <div id="root">

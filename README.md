@@ -189,12 +189,33 @@ The application is designed as a Progressive Web App with:
 - **Fast**: Optimized loading and performance
 - **Secure**: HTTPS required for PWA features
 
+### PWA Manifest
+
+The app includes a comprehensive web app manifest (`/manifest.json`) with:
+
+- **App Identity**: Name, description, and branding
+- **Display Mode**: Standalone for native-like experience
+- **Theme Colors**: Romanian-inspired color scheme
+- **Icons**: Multiple sizes (72x72 to 512x512) for all devices
+- **Shortcuts**: Quick actions for common tasks
+- **Screenshots**: For app store listings
+- **Orientation**: Portrait-primary for optimal mobile experience
+
 ### PWA Installation
 
 1. Open the app in a supported browser
 2. Look for the "Install" prompt or button
 3. Follow browser-specific installation steps
 4. App will appear on your home screen/desktop
+
+### PWA Icons
+
+The app includes optimized icons for all platforms:
+
+- **Standard Icons**: 72x72, 96x96, 128x128, 144x144, 152x152, 192x192, 384x384, 512x512
+- **Apple Touch Icon**: 180x180 for iOS devices
+- **Favicon**: SVG and ICO formats
+- **Microsoft Tiles**: Configured via browserconfig.xml
 
 ## 🔒 Privacy & Security
 
