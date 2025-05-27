@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useFileUploadWithProgress } from '@/hooks/useFileUploadWithProgress';
-import FileUploadZone from '@/components/upload/FileUploadZone';
+import FileUploadWithErrorHandling from '@/components/upload/FileUploadWithErrorHandling';
 import UploadStatus from '@/components/upload/UploadStatus';
 import StatusMessage from '@/components/upload/StatusMessage';
 import CancelButton from '@/components/upload/CancelButton';
@@ -41,17 +41,20 @@ export default function FileUploadPage() {
     },
   });
 
-  const handleFilesSelected = (files: File[]) => {
+  const handleFilesUploaded = (files: File[]) => {
     if (files.length > 0 && files[0]) {
       selectFile(files[0]);
       setShowUploadButton(true);
     }
   };
 
-  const handleFilesRejected = (
-    rejectedFiles: Array<{ file: File; error: string; errorCode: string }>
+  const handleValidationError = (
+    errorCode: ValidationErrorCode,
+    context?: ErrorContext
   ) => {
-    console.log('File rejected:', rejectedFiles[0]);
+    console.log('Validation error occurred:', errorCode, context);
+    // Reset upload state when validation fails
+    setShowUploadButton(false);
   };
 
   const handleFileRemove = () => {
@@ -114,14 +117,17 @@ export default function FileUploadPage() {
           </div>
         </div>
 
-        {/* File upload component */}
-        <FileUploadZone
-          onFilesSelected={handleFilesSelected}
-          onFilesRejected={handleFilesRejected}
-          onFileRemove={handleFileRemove}
-          disabled={isUploading}
-          className="mb-8"
-        />
+        {/* File upload component with comprehensive error handling */}
+        <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
+          <FileUploadWithErrorHandling
+            onFilesUploaded={handleFilesUploaded}
+            onValidationError={handleValidationError}
+            showToasts={true}
+            showDetailedErrors={true}
+            maxFiles={1}
+            className="min-h-32"
+          />
+        </div>
 
         {/* Upload button */}
         {showUploadButton && selectedFile && !isUploading && !uploadedFile && (
@@ -290,10 +296,7 @@ export default function FileUploadPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
-                      removeFile();
-                      setShowUploadButton(false);
-                    }}
+                    onClick={handleFileRemove}
                     className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-colors"
                   >
                     Upload Another
@@ -319,10 +322,7 @@ export default function FileUploadPage() {
 
             <div className="text-center">
               <button
-                onClick={() => {
-                  removeFile();
-                  setShowUploadButton(false);
-                }}
+                onClick={handleFileRemove}
                 className="
                   inline-flex items-center px-4 py-2 border border-gray-300 
                   text-sm font-medium rounded-md text-gray-700 bg-white 
@@ -335,31 +335,6 @@ export default function FileUploadPage() {
             </div>
           </div>
         )}
-
-        {/* Instructions */}
-        <div className="mt-8 p-6 bg-blue-50 border border-blue-200 rounded-lg">
-          <h3 className="text-lg font-medium text-blue-800 mb-2">
-            💡 How to Use
-          </h3>
-          <ul className="text-sm text-blue-700 space-y-2">
-            <li>• Select your Romanian ID document (JPG, PNG, WEBP, or PDF)</li>
-            <li>
-              • Click "Start Processing" to upload and process your document
-            </li>
-            <li>• Watch the real-time progress indicators during upload</li>
-            <li>
-              • Once complete, you can extract data or upload another document
-            </li>
-          </ul>
-
-          <div className="mt-4 p-3 bg-blue-100 rounded-md">
-            <p className="text-xs text-blue-600">
-              <strong>For testing:</strong> Use browser dev tools to throttle
-              network to "Slow 3G" to see detailed progress indicators during
-              upload.
-            </p>
-          </div>
-        </div>
       </div>
     </div>
   );
