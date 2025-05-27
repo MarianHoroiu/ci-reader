@@ -8,6 +8,8 @@ import FileUploadWithErrorHandling from '@/components/upload/FileUploadWithError
 import UploadStatus from '@/components/upload/UploadStatus';
 import StatusMessage from '@/components/upload/StatusMessage';
 import CancelButton from '@/components/upload/CancelButton';
+import { type ValidationErrorCode } from '@/lib/constants/supported-formats';
+import { type ErrorContext } from '@/lib/constants/error-messages';
 import {
   formatBytes,
   formatSpeed,
@@ -17,6 +19,8 @@ import {
 export default function FileUploadPage() {
   const router = useRouter();
   const [showUploadButton, setShowUploadButton] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingComplete, setProcessingComplete] = useState(false);
 
   const {
     selectedFile,
@@ -60,12 +64,49 @@ export default function FileUploadPage() {
   const handleFileRemove = () => {
     removeFile();
     setShowUploadButton(false);
+    setProcessingComplete(false);
   };
 
   const handleStartUpload = async () => {
     if (selectedFile) {
       await startUpload();
     }
+  };
+
+  const handleExtractData = async () => {
+    if (!uploadedFile || uploadedFile.status !== 'success') return;
+
+    setIsProcessing(true);
+
+    try {
+      // Simulate data extraction process
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      setProcessingComplete(true);
+    } catch (error) {
+      console.error('Data extraction failed:', error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleUploadAnother = () => {
+    // Clear all state
+    removeFile();
+    setShowUploadButton(false);
+    setProcessingComplete(false);
+    setIsProcessing(false);
+
+    // Trigger file picker
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.pdf,.jpg,.jpeg,.png';
+    fileInput.onchange = e => {
+      const files = (e.target as HTMLInputElement).files;
+      if (files && files.length > 0) {
+        handleFilesUploaded(Array.from(files));
+      }
+    };
+    fileInput.click();
   };
 
   const handleBack = () => {
@@ -154,7 +195,7 @@ export default function FileUploadPage() {
                   d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
                 />
               </svg>
-              Start Processing
+              Upload File
             </button>
           </div>
         )}
@@ -240,16 +281,101 @@ export default function FileUploadPage() {
           </div>
         )}
 
-        {/* Success state */}
-        {uploadedFile && uploadedFile.status === 'success' && (
+        {/* File uploaded - ready for processing */}
+        {uploadedFile &&
+          uploadedFile.status === 'success' &&
+          !processingComplete && (
+            <div className="mb-8">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                <div className="flex items-center">
+                  <svg
+                    className="w-8 h-8 text-blue-600 mr-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                  <div>
+                    <h3 className="text-lg font-medium text-blue-800">
+                      File Uploaded Successfully
+                    </h3>
+                    <p className="text-blue-700">
+                      File: {uploadedFile.file.name} (
+                      {formatBytes(uploadedFile.file.size)})
+                    </p>
+                    <p className="text-sm text-blue-600 mt-1">
+                      Ready for data extraction processing.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Action buttons */}
+                <div className="mt-4 pt-4 border-t border-blue-200">
+                  <div className="flex space-x-4">
+                    <button
+                      type="button"
+                      onClick={handleExtractData}
+                      disabled={isProcessing}
+                      className="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {isProcessing ? (
+                        <>
+                          <svg
+                            className="animate-spin -ml-1 mr-3 h-4 w-4 text-white"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
+                          </svg>
+                          Processing...
+                        </>
+                      ) : (
+                        'Extract Data'
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleUploadAnother}
+                      disabled={isProcessing}
+                      className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Upload Another
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+        {/* Processing complete state */}
+        {processingComplete && uploadedFile && (
           <div className="mb-8">
             <StatusMessage
               phase="complete"
-              message="Upload completed successfully!"
+              message="Processing Complete!"
               details={
-                'Your file ' +
+                'Data extraction from ' +
                 uploadedFile.file.name +
-                ' has been uploaded and processed.'
+                ' has been completed successfully.'
               }
               variant="banner"
               className="mb-4"
@@ -272,15 +398,15 @@ export default function FileUploadPage() {
                 </svg>
                 <div>
                   <h3 className="text-lg font-medium text-green-800">
-                    Processing Complete
+                    Data Extraction Complete
                   </h3>
                   <p className="text-green-700">
                     File: {uploadedFile.file.name} (
                     {formatBytes(uploadedFile.file.size)})
                   </p>
                   <p className="text-sm text-green-600 mt-1">
-                    Your document is ready for data extraction and template
-                    filling.
+                    Your document data has been extracted and is ready for
+                    template filling.
                   </p>
                 </div>
               </div>
@@ -292,11 +418,11 @@ export default function FileUploadPage() {
                     type="button"
                     className="inline-flex items-center px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors"
                   >
-                    Extract Data
+                    View Extracted Data
                   </button>
                   <button
                     type="button"
-                    onClick={handleFileRemove}
+                    onClick={handleUploadAnother}
                     className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-colors"
                   >
                     Upload Another
