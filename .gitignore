@@ -117,4 +117,12 @@ jspm_packages/
 
 # Temporary folders
 tmp/
-temp/ 
+temp/
+
+# HTTPS Development Certificates
+/certs/
+/certificates/
+*.pem
+*.key
+*.crt
+*.cert 

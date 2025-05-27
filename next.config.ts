@@ -3,6 +3,9 @@ import type { NextConfig } from 'next';
 const nextConfig: NextConfig = {
   // Enable experimental features for Next.js 15
   experimental: {
+    // HTTPS is handled via command-line flags in Next.js 15:
+    // --experimental-https (auto-generates certificates with mkcert)
+    // --experimental-https-key and --experimental-https-cert (custom certificates)
     // Future experimental features can be added here
   },
 

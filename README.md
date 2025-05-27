@@ -93,6 +93,7 @@ The application includes a complete set of icons for all platforms:
 
 - Node.js 18.17 or later
 - npm, yarn, or pnpm package manager
+- For HTTPS development (optional): mkcert or OpenSSL
 
 ### Installation
 
@@ -113,7 +114,16 @@ The application includes a complete set of icons for all platforms:
    pnpm install
    ```
 
-3. **Start development server**
+3. **Set up environment variables (optional)**
+
+   ```bash
+   cp env.local.template .env.local
+   # Edit .env.local with your preferred settings
+   ```
+
+4. **Start development server**
+
+   **HTTP Development (default):**
 
    ```bash
    npm run dev
@@ -123,23 +133,148 @@ The application includes a complete set of icons for all platforms:
    pnpm dev
    ```
 
-4. **Open in browser** Navigate to [http://localhost:3000](http://localhost:3000)
+   **HTTPS Development (recommended for PWA features):**
+
+   ```bash
+   # Option 1: Auto-generate certificates with mkcert (recommended)
+   npm run dev:https
+
+   # Option 2: Use custom certificates
+   npm run setup:https
+   npm run dev:https-custom
+   ```
+
+5. **Open in browser**
+   - HTTP: Navigate to [http://localhost:3000](http://localhost:3000)
+   - HTTPS: Navigate to [https://localhost:3000](https://localhost:3000)
 
 ### Development Scripts
 
 ```bash
 # Development
-npm run dev          # Start development server with Turbopack
-npm run build        # Build for production
-npm run start        # Start production server
+npm run dev                # Start HTTP development server with Turbopack
+npm run dev:https          # Start HTTPS development server (auto-certificates)
+npm run dev:https-custom   # Start HTTPS development server (custom certificates)
+npm run build              # Build for production
+npm run start              # Start production server
+
+# HTTPS Setup
+npm run setup:https        # Complete HTTPS setup (certificates + instructions)
+npm run setup:certs        # Generate SSL certificates
+npm run setup:certs-force  # Force regenerate certificates
+npm run certs:info         # Display certificate information
+npm run certs:clean        # Remove existing certificates
 
 # Quality Assurance
-npm run type-check   # TypeScript type checking
-npm run lint         # ESLint code linting
-npm run format       # Format code with Prettier
-npm run format:check # Check code formatting
-npm run check        # Run all quality checks
+npm run type-check         # TypeScript type checking
+npm run lint               # ESLint code linting
+npm run format             # Format code with Prettier
+npm run format:check       # Check code formatting
+npm run check              # Run all quality checks
 ```
+
+## 🔐 HTTPS Development Setup
+
+PWA features like service workers, install prompts, and push notifications require a secure context
+(HTTPS). This project provides multiple ways to set up HTTPS for local development.
+
+### Method 1: Automatic Setup with Next.js 15 (Recommended)
+
+Next.js 15 includes built-in HTTPS support using mkcert:
+
+```bash
+# Start HTTPS development server (auto-generates certificates)
+npm run dev:https
+```
+
+This will:
+
+- Automatically install mkcert if not present
+- Generate trusted certificates for localhost
+- Start the development server on https://localhost:3000
+
+### Method 2: Custom Certificate Setup
+
+For more control over certificates or if automatic setup fails:
+
+```bash
+# Generate custom certificates
+npm run setup:https
+
+# Start development server with custom certificates
+npm run dev:https-custom
+```
+
+### Method 3: Manual Certificate Generation
+
+You can also generate certificates manually:
+
+```bash
+# Generate certificates using our script
+node scripts/generate-certs.js
+
+# View certificate information
+npm run certs:info
+
+# Clean up certificates
+npm run certs:clean
+```
+
+### Certificate Management
+
+The certificate generation script supports multiple commands:
+
+```bash
+# Generate certificates (default)
+node scripts/generate-certs.js
+
+# Force regenerate certificates
+node scripts/generate-certs.js gen --force
+
+# Display certificate information
+node scripts/generate-certs.js info
+
+# Remove existing certificates
+node scripts/generate-certs.js clean
+
+# Install mkcert tool
+node scripts/generate-certs.js install-mkcert
+
+# Show help
+node scripts/generate-certs.js help
+```
+
+### Troubleshooting HTTPS
+
+**Certificate Trust Issues:**
+
+- **Chrome/Edge**: Visit https://localhost:3000 and click "Advanced" → "Proceed to localhost"
+- **Firefox**: Click "Advanced" → "Accept the Risk and Continue"
+- **Safari**: Click "Show Details" → "visit this website"
+
+**mkcert Installation:**
+
+- **macOS**: `brew install mkcert`
+- **Windows**: `choco install mkcert` or `scoop install mkcert`
+- **Linux**: `sudo apt-get install mkcert` or manual installation
+
+**Manual Certificate Trust:**
+
+- **macOS**: Add certificate to Keychain and mark as trusted
+- **Windows**: Add to "Trusted Root Certification Authorities"
+- **Linux**: Copy to `/usr/local/share/ca-certificates/` and run `sudo update-ca-certificates`
+
+### Why HTTPS for Development?
+
+HTTPS is required for:
+
+- ✅ Service Worker registration
+- ✅ PWA install prompts
+- ✅ Push notifications
+- ✅ Geolocation API
+- ✅ Camera/microphone access
+- ✅ Clipboard API
+- ✅ Background sync
 
 ## 📱 PWA Installation
 
