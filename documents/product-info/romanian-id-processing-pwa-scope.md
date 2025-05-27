@@ -8,14 +8,21 @@ information.
 
 ## Business Requirements
 
-### Core Functionality
+### Core MVP Functionality
 
 - **Document Upload & OCR**: Upload Romanian ID documents (images or scanned PDFs) and extract
   personal data using client-side OCR
+- **Data Export**: Export extracted ID data to Excel format for use with external templates
+- **Session Management**: Manage multiple ID extractions within current browser session
+- **Data Correction**: Review and correct extracted data before export
+- **Dashboard Interface**: Intuitive interface for document processing and data management
+- **PWA Capability**: Installable progressive web app for enhanced user experience
+
+### Future Enhancements
+
 - **Template Management**: Manage and organize document templates for automatic completion
 - **Form Pre-filling**: Automatically populate document templates with extracted ID data
 - **Document Generation**: Create new pre-filled documents in organized directories
-- **Dashboard Interface**: Intuitive interface for document selection and template management
 - **Offline Capability**: Full functionality without internet connection for maximum privacy
 
 ### Target Users
@@ -77,7 +84,15 @@ NextJS PWA Application
   - Issuing Authority (Eliberat de)
   - Validity Date (Valabil până la)
 
-### 3. Template Management
+### 3. Data Export & Management
+
+- Export extracted data to Excel (.xlsx) format
+- Session-based data storage for current browser session
+- Multiple ID document processing in single session
+- Structured data format with all Romanian ID fields
+- Batch export capabilities for multiple documents
+
+### 4. Template Management (Future Enhancement)
 
 - Upload and store document templates (PDF/DOCX)
 - Template categorization and tagging
@@ -85,7 +100,7 @@ NextJS PWA Application
 - Field mapping configuration
 - Template versioning
 
-### 4. Document Generation
+### 5. Document Generation (Future Enhancement)
 
 - Automatic form completion with extracted data
 - Support for multiple templates simultaneously
@@ -93,12 +108,14 @@ NextJS PWA Application
 - Batch processing capabilities
 - Export in original template format
 
-### 5. User Interface
+### 6. User Interface
 
 - Modern, responsive dashboard
 - Document preview capabilities
 - Progress indicators for processing
 - Error handling and validation
+- Session management interface
+- Excel export functionality
 - Accessibility compliance (WCAG 2.1)
 
 ## Non-Functional Requirements
@@ -106,9 +123,10 @@ NextJS PWA Application
 ### Performance
 
 - OCR processing: < 30 seconds per document
-- Template processing: < 5 seconds per template
+- Excel export: < 5 seconds per file
 - UI responsiveness: < 100ms for interactions
 - PWA installation: < 10 seconds
+- Session data management: < 1 second for operations
 - Build time: 40-60% faster with Turbopack
 - Bundle size: 10-20% smaller with enhanced tree-shaking
 - Runtime performance: 5-15% improvement with React 19 optimizations
@@ -117,8 +135,9 @@ NextJS PWA Application
 
 - All processing performed client-side
 - No data transmission to external servers
-- Local data encryption for stored templates
+- Session-based data storage (no persistent storage)
 - Secure file handling practices
+- Data cleared on browser session end
 
 ### Compatibility
 
@@ -127,108 +146,111 @@ NextJS PWA Application
 - Minimum 4GB RAM recommended
 - 1GB available storage space
 
-## Implementation Plan
+## MVP Implementation Plan
 
-### Phase 1: Project Setup & Foundation (Week 1)
+### Phase 1: Document Processing Foundation (Week 1)
 
-#### Day 1-2: Environment Setup
+#### Day 1-2: Core Setup (✅ COMPLETED)
 
-- [ ] Initialize Next.js 15 project with TypeScript
-- [ ] Configure Tailwind CSS
-- [ ] Set up PWA configuration
-- [ ] Install and configure required dependencies
-- [ ] Set up development environment and tooling
+- [x] Initialize Next.js 15 project with TypeScript
+- [x] Configure Tailwind CSS
+- [x] Set up PWA configuration
+- [x] Install and configure required dependencies
+- [x] Set up development environment and tooling
 
-#### Day 3-4: Basic Architecture
+#### Day 3-4: Document Upload & Basic OCR
 
-- [ ] Create project structure and components
-- [ ] Set up routing with App Router
-- [ ] Implement basic UI layout with Tailwind
-- [ ] Configure IndexedDB wrapper
-- [ ] Set up service workers for PWA
-
-#### Day 5-7: Core Infrastructure
-
-- [ ] Implement file upload functionality
+- [ ] Create file upload component with drag-and-drop
+- [ ] Implement file type validation
 - [ ] Set up Web Workers for OCR processing
-- [ ] Create basic state management
-- [ ] Implement error handling system
-- [ ] Add progress tracking utilities
-
-### Phase 2: OCR Integration & Processing (Week 2)
-
-#### Day 8-10: Tesseract.js Integration
-
 - [ ] Configure Tesseract.js with Romanian language support
-- [ ] Implement image preprocessing pipeline
-- [ ] Set up Web Workers for OCR processing
-- [ ] Create OCR accuracy optimization
-- [ ] Add progress tracking for OCR operations
+- [ ] Create basic state management with sessionStorage
 
-#### Day 11-12: PDF Processing
+#### Day 5-7: OCR Processing & UI
+
+- [ ] Implement image preprocessing pipeline
+- [ ] Create OCR progress tracking
+- [ ] Add confidence scoring for extracted text
+- [ ] Build basic dashboard layout
+- [ ] Implement error handling system
+
+### Phase 2: PDF Support & Data Management (Week 2)
+
+#### Day 8-10: PDF Processing
 
 - [ ] Integrate PDF.js for PDF rendering
 - [ ] Implement PDF to image conversion
 - [ ] Add support for multi-page PDF processing
 - [ ] Create PDF preview functionality
+- [ ] Optimize image quality for OCR
 
-#### Day 13-14: Data Extraction Engine
+#### Day 11-12: Data Extraction & Validation
 
-- [ ] Implement Romanian ID field detection
-- [ ] Create data validation and cleaning
+- [ ] Implement Romanian ID field detection patterns
+- [ ] Create data validation (CNP, dates, etc.)
 - [ ] Add regex patterns for Romanian ID formats
-- [ ] Implement confidence scoring for extracted data
-- [ ] Create manual correction interface
+- [ ] Build manual correction interface
+- [ ] Add field confidence indicators
 
-### Phase 3: Template Management System (Week 3)
+#### Day 13-14: Excel Export Functionality
 
-#### Day 15-17: Template Upload & Storage
+- [ ] Integrate xlsx library for Excel generation
+- [ ] Create Romanian ID data structure for export
+- [ ] Implement Excel file generation with proper formatting
+- [ ] Add file naming conventions with timestamps
+- [ ] Create download management for generated files
 
-- [ ] Implement template upload functionality
-- [ ] Create IndexedDB schema for templates
-- [ ] Add template categorization system
-- [ ] Implement template preview
-- [ ] Create template metadata management
+### Phase 3: Session Management & UI Polish (Week 3)
 
-#### Day 18-19: Field Mapping System
+#### Day 15-17: Session Management
 
-- [ ] Create visual field mapping interface
-- [ ] Implement template field detection
-- [ ] Add custom field mapping configuration
-- [ ] Create mapping validation
+- [ ] Implement session data structure for multiple IDs
+- [ ] Create session management interface
+- [ ] Add clear session functionality
+- [ ] Implement document history view
+- [ ] Add quick re-export functionality
 
-#### Day 20-21: Template Processing Engine
+#### Day 18-19: Dashboard Interface
 
-- [ ] Integrate PDF-lib for PDF manipulation
-- [ ] Integrate docx.js for Word document processing
-- [ ] Implement field replacement logic
-- [ ] Add template rendering pipeline
+- [ ] Design main dashboard layout with Tailwind CSS
+- [ ] Create responsive navigation system
+- [ ] Implement workflow guidance
+- [ ] Add accessibility features (ARIA, keyboard navigation)
+- [ ] Create mobile-optimized interface
 
-### Phase 4: Document Generation & UI Polish (Week 4)
+#### Day 20-21: User Feedback & Progress
 
-#### Day 22-24: Document Generation
+- [ ] Implement comprehensive loading states
+- [ ] Create user-friendly error messages
+- [ ] Add success confirmation dialogs
+- [ ] Design progress indicator components
+- [ ] Implement toast notification system
 
-- [ ] Implement batch document generation
-- [ ] Create organized output directory structure
-- [ ] Add file naming conventions
-- [ ] Implement download management
-- [ ] Create generation progress tracking
+### Phase 4: Testing & Launch Preparation (Week 4)
 
-#### Day 25-26: Dashboard Interface
+#### Day 22-24: User Onboarding & Help
 
-- [ ] Create main dashboard layout
-- [ ] Implement document library interface
-- [ ] Add template selection interface
-- [ ] Create processing queue management
-- [ ] Add settings and configuration panel
+- [ ] Create user onboarding flow
+- [ ] Build help system with tooltips
+- [ ] Add sample templates and data
+- [ ] Create interactive tutorial
+- [ ] Implement contextual help system
 
-#### Day 27-28: Final Polish & Testing
+#### Day 25-26: Testing & Optimization
 
-- [ ] Implement responsive design optimizations
-- [ ] Add accessibility features
-- [ ] Create comprehensive error handling
-- [ ] Implement data validation throughout
-- [ ] Add user onboarding and help system
+- [ ] Comprehensive testing of OCR pipeline
+- [ ] Cross-browser compatibility testing
+- [ ] Performance optimization
+- [ ] Accessibility audit and fixes
+- [ ] Error handling validation
+
+#### Day 27-28: MVP Launch Preparation
+
+- [ ] Final UI polish and responsive design
+- [ ] Documentation and user guides
+- [ ] Deployment configuration
+- [ ] Performance benchmarking
+- [ ] MVP launch readiness check
 
 ## Deliverables
 
@@ -258,38 +280,53 @@ NextJS PWA Application
 
 ## Success Criteria
 
-### Functional Success Metrics
+### MVP Functional Success Metrics
 
 - [ ] 90%+ accuracy for Romanian ID text extraction
+- [ ] Support for multiple document processing in single session
+- [ ] < 5% error rate in Excel export generation
+- [ ] Session data management reliability > 99%
+- [ ] PWA installation success rate > 95%
+
+### MVP Performance Success Metrics
+
+- [ ] OCR processing time < 30 seconds per document
+- [ ] Excel export generation time < 5 seconds per file
+- [ ] Application load time < 3 seconds
+- [ ] Lighthouse PWA score > 90
+- [ ] Memory usage < 300MB during operation
+
+### Future Enhancement Success Metrics
+
 - [ ] Support for 100+ simultaneous template processing
 - [ ] < 5% error rate in document generation
 - [ ] Full offline functionality
-- [ ] PWA installation success rate > 95%
-
-### Performance Success Metrics
-
-- [ ] OCR processing time < 30 seconds per document
-- [ ] Template generation time < 5 seconds per template
-- [ ] Application load time < 3 seconds
-- [ ] Lighthouse PWA score > 90
-- [ ] Memory usage < 500MB during operation
+- [ ] Template processing time < 5 seconds per template
 
 ## Risk Assessment & Mitigation
 
-### Technical Risks
+### MVP Technical Risks
 
 - **OCR Accuracy**: Mitigated by image preprocessing and manual correction interface
 - **Browser Compatibility**: Mitigated by progressive enhancement and feature detection
 - **Performance Issues**: Mitigated by Web Workers and optimization techniques
+- **Session Data Loss**: Mitigated by auto-save functionality and user warnings
+
+### MVP Business Risks
+
+- **Data Privacy Concerns**: Mitigated by client-side processing and session-only storage
+- **Excel Export Compatibility**: Mitigated by using well-tested xlsx library
+- **User Adoption**: Mitigated by simple workflow and clear value proposition
+
+### Future Enhancement Risks
+
 - **Storage Limitations**: Mitigated by efficient data compression and cleanup routines
-
-### Business Risks
-
-- **Data Privacy Concerns**: Mitigated by client-side processing and no data transmission
 - **Template Compatibility**: Mitigated by comprehensive format support and validation
-- **User Adoption**: Mitigated by intuitive UI and comprehensive onboarding
+- **Offline Functionality**: Mitigated by progressive enhancement approach
 
 ---
 
-**Project Status**: Ready for Implementation  
-**Last Updated**: 26.05.2025 **Version**: 1.0
+**Project Status**: MVP Implementation in Progress  
+**Last Updated**: Current Date  
+**Version**: 2.0 (MVP Focus)  
+**MVP Completion**: 4 weeks estimated

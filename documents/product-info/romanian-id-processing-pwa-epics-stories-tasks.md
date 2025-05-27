@@ -6,11 +6,13 @@
 
 ### Epic 2: Document Processing Engine
 
-### Epic 3: Template Management System
+### Epic 3: Data Export & Management
 
-### Epic 4: Document Generation Pipeline
+### Epic 4: Template Management System (Future)
 
-### Epic 5: User Interface & Experience
+### Epic 5: Document Generation Pipeline (Future)
+
+### Epic 6: User Interface & Experience
 
 ---
 
@@ -28,14 +30,14 @@
 
 **Tasks:**
 
-- [ ] **Task 1.1.1**: Initialize Next.js 15 project with TypeScript
-- [ ] **Task 1.1.2**: Configure PWA manifest.json with app metadata
-- [ ] **Task 1.1.3**: Set up service worker for offline functionality
-- [ ] **Task 1.1.4**: Implement install prompt component
-- [ ] **Task 1.1.5**: Configure HTTPS for local development
-- [ ] **Task 1.1.6**: Add PWA security headers in next.config.ts
+- [x] **Task 1.1.1**: Initialize Next.js 15 project with TypeScript
+- [x] **Task 1.1.2**: Configure PWA manifest.json with app metadata
+- [x] **Task 1.1.3**: Set up service worker for offline functionality
+- [x] **Task 1.1.4**: Implement install prompt component
+- [x] **Task 1.1.5**: Configure HTTPS for local development
+- [x] **Task 1.1.6**: Add PWA security headers in next.config.ts
 
-#### **Story 1.2**: As a user, I want the app to work reliably offline so I can process documents without internet
+#### **Story 1.15**: As a user, I want the app to work reliably offline so I can process documents without internet (FUTURE ENHANCEMENT)
 
 **Acceptance Criteria:**
 
@@ -45,10 +47,10 @@
 
 **Tasks:**
 
-- [ ] **Task 1.2.1**: Set up IndexedDB wrapper for local storage
-- [ ] **Task 1.2.2**: Implement offline-first data strategy
-- [ ] **Task 1.2.3**: Create network status detection
-- [ ] **Task 1.2.4**: Add offline indicators in UI
+- [ ] **Task 1.15.1**: Set up IndexedDB wrapper for local storage
+- [ ] **Task 1.15.2**: Implement offline-first data strategy
+- [ ] **Task 1.15.3**: Create network status detection
+- [ ] **Task 1.15.4**: Add offline indicators in UI
 
 ---
 
@@ -105,14 +107,14 @@
 - [ ] **Task 2.3.4**: Create PDF preview component
 - [ ] **Task 2.3.5**: Optimize image quality for OCR
 
-#### **Story 2.4**: As a user, I want to review and correct extracted data so I can ensure accuracy before generating documents
+#### **Story 2.4**: As a user, I want to review and correct extracted data so I can ensure accuracy before exporting
 
 **Acceptance Criteria:**
 
 - Shows all extracted fields in editable form
 - Highlights low-confidence extractions
 - Validates Romanian ID format (CNP, etc.)
-- Saves corrections for future use
+- Stores data in sessionStorage for current session
 
 **Tasks:**
 
@@ -120,13 +122,51 @@
 - [ ] **Task 2.4.2**: Implement data validation (CNP, dates, etc.)
 - [ ] **Task 2.4.3**: Build manual correction interface
 - [ ] **Task 2.4.4**: Add field confidence indicators
-- [ ] **Task 2.4.5**: Create data cleaning algorithms
+- [ ] **Task 2.4.5**: Create sessionStorage data management
 
 ---
 
-### **Epic 3: Template Management System**
+### **Epic 3: Data Export & Management**
 
-#### **Story 3.1**: As a user, I want to upload document templates so I can automatically fill them with ID data
+#### **Story 3.1**: As a user, I want to export extracted ID data to Excel so I can use it for document templates
+
+**Acceptance Criteria:**
+
+- Exports data to Excel (.xlsx) format
+- Includes all Romanian ID fields in structured format
+- Generates meaningful file names with timestamps
+- Supports batch export of multiple ID scans
+
+**Tasks:**
+
+- [ ] **Task 3.1.1**: Integrate xlsx library for Excel generation
+- [ ] **Task 3.1.2**: Create Romanian ID data structure for export
+- [ ] **Task 3.1.3**: Implement Excel file generation with proper formatting
+- [ ] **Task 3.1.4**: Add file naming conventions with timestamps
+- [ ] **Task 3.1.5**: Create download management for generated files
+
+#### **Story 3.2**: As a user, I want to manage my session data so I can work with multiple ID documents
+
+**Acceptance Criteria:**
+
+- Store multiple ID extractions in current session
+- Clear session data when needed
+- Show list of processed documents
+- Quick access to previous extractions
+
+**Tasks:**
+
+- [ ] **Task 3.2.1**: Implement session data structure for multiple IDs
+- [ ] **Task 3.2.2**: Create session management interface
+- [ ] **Task 3.2.3**: Add clear session functionality
+- [ ] **Task 3.2.4**: Implement document history view
+- [ ] **Task 3.2.5**: Add quick re-export functionality
+
+---
+
+### **Epic 4: Template Management System (FUTURE ENHANCEMENT)**
+
+#### **Story 4.1**: As a user, I want to upload document templates so I can automatically fill them with ID data
 
 **Acceptance Criteria:**
 
@@ -137,13 +177,13 @@
 
 **Tasks:**
 
-- [ ] **Task 3.1.1**: Create template upload functionality
-- [ ] **Task 3.1.2**: Design IndexedDB schema for templates
-- [ ] **Task 3.1.3**: Implement template categorization system
-- [ ] **Task 3.1.4**: Add template preview functionality
-- [ ] **Task 3.1.5**: Create template metadata management
+- [ ] **Task 4.1.1**: Create template upload functionality
+- [ ] **Task 4.1.2**: Design IndexedDB schema for templates
+- [ ] **Task 4.1.3**: Implement template categorization system
+- [ ] **Task 4.1.4**: Add template preview functionality
+- [ ] **Task 4.1.5**: Create template metadata management
 
-#### **Story 3.2**: As a user, I want to map ID fields to template fields so the system knows where to place the extracted data
+#### **Story 4.2**: As a user, I want to map ID fields to template fields so the system knows where to place the extracted data
 
 **Acceptance Criteria:**
 
@@ -154,13 +194,13 @@
 
 **Tasks:**
 
-- [ ] **Task 3.2.1**: Build visual field mapping interface
-- [ ] **Task 3.2.2**: Implement automatic field detection
-- [ ] **Task 3.2.3**: Create custom mapping configuration
-- [ ] **Task 3.2.4**: Add mapping validation system
-- [ ] **Task 3.2.5**: Create mapping test functionality
+- [ ] **Task 4.2.1**: Build visual field mapping interface
+- [ ] **Task 4.2.2**: Implement automatic field detection
+- [ ] **Task 4.2.3**: Create custom mapping configuration
+- [ ] **Task 4.2.4**: Add mapping validation system
+- [ ] **Task 4.2.5**: Create mapping test functionality
 
-#### **Story 3.3**: As a user, I want to organize my templates so I can quickly find the ones I need
+#### **Story 4.3**: As a user, I want to organize my templates so I can quickly find the ones I need
 
 **Acceptance Criteria:**
 
@@ -171,16 +211,16 @@
 
 **Tasks:**
 
-- [ ] **Task 3.3.1**: Implement template search functionality
-- [ ] **Task 3.3.2**: Create filtering and sorting options
-- [ ] **Task 3.3.3**: Add template versioning system
-- [ ] **Task 3.3.4**: Implement bulk operations (delete, move, etc.)
+- [ ] **Task 4.3.1**: Implement template search functionality
+- [ ] **Task 4.3.2**: Create filtering and sorting options
+- [ ] **Task 4.3.3**: Add template versioning system
+- [ ] **Task 4.3.4**: Implement bulk operations (delete, move, etc.)
 
 ---
 
-### **Epic 4: Document Generation Pipeline**
+### **Epic 5: Document Generation Pipeline (FUTURE ENHANCEMENT)**
 
-#### **Story 4.1**: As a user, I want to generate filled documents so I can use them for official purposes
+#### **Story 5.1**: As a user, I want to generate filled documents so I can use them for official purposes
 
 **Acceptance Criteria:**
 
@@ -191,13 +231,13 @@
 
 **Tasks:**
 
-- [ ] **Task 4.1.1**: Integrate PDF-lib for PDF manipulation
-- [ ] **Task 4.1.2**: Integrate docx.js for Word processing
-- [ ] **Task 4.1.3**: Implement field replacement logic
-- [ ] **Task 4.1.4**: Create document rendering pipeline
-- [ ] **Task 4.1.5**: Add batch processing capabilities
+- [ ] **Task 5.1.1**: Integrate PDF-lib for PDF manipulation
+- [ ] **Task 5.1.2**: Integrate docx.js for Word processing
+- [ ] **Task 5.1.3**: Implement field replacement logic
+- [ ] **Task 5.1.4**: Create document rendering pipeline
+- [ ] **Task 5.1.5**: Add batch processing capabilities
 
-#### **Story 4.2**: As a user, I want organized output files so I can easily manage generated documents
+#### **Story 5.2**: As a user, I want organized output files so I can easily manage generated documents
 
 **Acceptance Criteria:**
 
@@ -208,13 +248,13 @@
 
 **Tasks:**
 
-- [ ] **Task 4.2.1**: Design output directory structure
-- [ ] **Task 4.2.2**: Implement file naming conventions
-- [ ] **Task 4.2.3**: Add generation metadata tracking
-- [ ] **Task 4.2.4**: Create custom naming pattern support
-- [ ] **Task 4.2.5**: Implement download management
+- [ ] **Task 5.2.1**: Design output directory structure
+- [ ] **Task 5.2.2**: Implement file naming conventions
+- [ ] **Task 5.2.3**: Add generation metadata tracking
+- [ ] **Task 5.2.4**: Create custom naming pattern support
+- [ ] **Task 5.2.5**: Implement download management
 
-#### **Story 4.3**: As a user, I want to track document generation progress so I know when my documents are ready
+#### **Story 5.3**: As a user, I want to track document generation progress so I know when my documents are ready
 
 **Acceptance Criteria:**
 
@@ -225,16 +265,16 @@
 
 **Tasks:**
 
-- [ ] **Task 4.3.1**: Create generation progress tracking
-- [ ] **Task 4.3.2**: Implement processing queue management
-- [ ] **Task 4.3.3**: Add error handling and reporting
-- [ ] **Task 4.3.4**: Create success/failure notifications
+- [ ] **Task 5.3.1**: Create generation progress tracking
+- [ ] **Task 5.3.2**: Implement processing queue management
+- [ ] **Task 5.3.3**: Add error handling and reporting
+- [ ] **Task 5.3.4**: Create success/failure notifications
 
 ---
 
-### **Epic 5: User Interface & Experience**
+### **Epic 6: User Interface & Experience**
 
-#### **Story 5.1**: As a user, I want an intuitive dashboard so I can easily navigate and use all features
+#### **Story 6.1**: As a user, I want an intuitive dashboard so I can easily navigate and use all features
 
 **Acceptance Criteria:**
 
@@ -245,13 +285,13 @@
 
 **Tasks:**
 
-- [ ] **Task 5.1.1**: Design main dashboard layout with Tailwind CSS
-- [ ] **Task 5.1.2**: Create responsive navigation system
-- [ ] **Task 5.1.3**: Implement workflow guidance
-- [ ] **Task 5.1.4**: Add accessibility features (ARIA, keyboard navigation)
-- [ ] **Task 5.1.5**: Create mobile-optimized interface
+- [ ] **Task 6.1.1**: Design main dashboard layout with Tailwind CSS
+- [ ] **Task 6.1.2**: Create responsive navigation system
+- [ ] **Task 6.1.3**: Implement workflow guidance
+- [ ] **Task 6.1.4**: Add accessibility features (ARIA, keyboard navigation)
+- [ ] **Task 6.1.5**: Create mobile-optimized interface
 
-#### **Story 5.2**: As a user, I want clear feedback on all operations so I understand what's happening
+#### **Story 6.2**: As a user, I want clear feedback on all operations so I understand what's happening
 
 **Acceptance Criteria:**
 
@@ -262,13 +302,13 @@
 
 **Tasks:**
 
-- [ ] **Task 5.2.1**: Implement comprehensive loading states
-- [ ] **Task 5.2.2**: Create user-friendly error messages
-- [ ] **Task 5.2.3**: Add success confirmation dialogs
-- [ ] **Task 5.2.4**: Design progress indicator components
-- [ ] **Task 5.2.5**: Implement toast notification system
+- [ ] **Task 6.2.1**: Implement comprehensive loading states
+- [ ] **Task 6.2.2**: Create user-friendly error messages
+- [ ] **Task 6.2.3**: Add success confirmation dialogs
+- [ ] **Task 6.2.4**: Design progress indicator components
+- [ ] **Task 6.2.5**: Implement toast notification system
 
-#### **Story 5.3**: As a new user, I want onboarding guidance so I can quickly learn how to use the app
+#### **Story 6.3**: As a new user, I want onboarding guidance so I can quickly learn how to use the app
 
 **Acceptance Criteria:**
 
@@ -279,116 +319,126 @@
 
 **Tasks:**
 
-- [ ] **Task 5.3.1**: Create user onboarding flow
-- [ ] **Task 5.3.2**: Build help system with tooltips
-- [ ] **Task 5.3.3**: Add sample templates and data
-- [ ] **Task 5.3.4**: Create interactive tutorial
-- [ ] **Task 5.3.5**: Implement contextual help system
+- [ ] **Task 6.3.1**: Create user onboarding flow
+- [ ] **Task 6.3.2**: Build help system with tooltips
+- [ ] **Task 6.3.3**: Add sample templates and data
+- [ ] **Task 6.3.4**: Create interactive tutorial
+- [ ] **Task 6.3.5**: Implement contextual help system
 
 ---
 
-## 🚀 Sprint Planning Recommendation
+## 🚀 MVP Sprint Planning (Revised)
 
-### **Sprint 1 (Week 1)**: Foundation
+### **Sprint 1 (Week 1)**: Document Processing Foundation
 
-**Focus**: Core PWA Infrastructure
+**Focus**: Core Document Upload and OCR
 
-- **Epic 1**: Complete Stories 1.1 & 1.2
-- **Deliverable**: Working PWA with offline capabilities
-- **Story Points**: 13
-
-**Sprint Goals:**
-
-- Installable PWA application
-- Offline-first architecture
-- Basic project structure
-
-### **Sprint 2 (Week 2)**: Document Processing
-
-**Focus**: OCR and Document Upload
-
-- **Epic 2**: Stories 2.1, 2.2, 2.3
-- **Deliverable**: Document upload and OCR processing
-- **Story Points**: 18
+- **Epic 1**: Story 1.1 (✅ Complete)
+- **Epic 2**: Stories 2.1, 2.2
+- **Deliverable**: Working document upload and OCR processing
+- **Story Points**: 10
 
 **Sprint Goals:**
 
 - File upload with drag-and-drop
-- OCR text extraction from images and PDFs
+- OCR text extraction from images
 - Romanian language support
 
-### **Sprint 3 (Week 3)**: Template System & Data Correction
+### **Sprint 2 (Week 2)**: PDF Support & Data Management
 
-**Focus**: Template Management and Data Validation
+**Focus**: PDF Processing and Data Correction
 
-- **Epic 2**: Story 2.4 (Data correction)
-- **Epic 3**: Stories 3.1, 3.2, 3.3
-- **Deliverable**: Complete template management system
-- **Story Points**: 21
+- **Epic 2**: Stories 2.3, 2.4
+- **Epic 3**: Story 3.1 (Excel export)
+- **Deliverable**: Complete document processing with Excel export
+- **Story Points**: 12
 
 **Sprint Goals:**
 
-- Template upload and organization
-- Field mapping system
+- PDF document processing
 - Data validation and correction interface
+- Excel export functionality
 
-### **Sprint 4 (Week 4)**: Generation & Polish
+### **Sprint 3 (Week 3)**: Session Management & UI Polish
 
-**Focus**: Document Generation and UI/UX
+**Focus**: Session Management and User Experience
 
-- **Epic 4**: Stories 4.1, 4.2, 4.3
-- **Epic 5**: Stories 5.1, 5.2, 5.3
-- **Deliverable**: Complete application with polished UI
-- **Story Points**: 31
+- **Epic 3**: Story 3.2 (Session management)
+- **Epic 6**: Stories 6.1, 6.2
+- **Deliverable**: Polished MVP with session management
+- **Story Points**: 15
 
 **Sprint Goals:**
 
-- Document generation pipeline
+- Multiple document session management
 - Professional dashboard interface
-- User onboarding and help system
+- Comprehensive user feedback system
+
+### **Sprint 4 (Week 4)**: Testing & Launch Preparation
+
+**Focus**: Testing, Onboarding, and Launch
+
+- **Epic 6**: Story 6.3 (Onboarding)
+- Testing and bug fixes
+- **Deliverable**: Production-ready MVP
+- **Story Points**: 8
+
+**Sprint Goals:**
+
+- User onboarding system
+- Comprehensive testing
+- MVP launch preparation
 
 ---
 
-## 📊 Project Metrics
+## 📊 Updated Project Metrics
 
-### Story Points Distribution
+### MVP Story Points Distribution
 
-| Epic                            | Stories | Tasks  | Story Points | Complexity |
-| ------------------------------- | ------- | ------ | ------------ | ---------- |
-| **Epic 1**: PWA Infrastructure  | 2       | 10     | 13           | Medium     |
-| **Epic 2**: Document Processing | 4       | 20     | 21           | High       |
-| **Epic 3**: Template Management | 3       | 14     | 18           | High       |
-| **Epic 4**: Document Generation | 3       | 14     | 15           | Medium     |
-| **Epic 5**: UI & Experience     | 3       | 15     | 16           | Medium     |
-| **TOTAL**                       | **15**  | **73** | **83**       | **High**   |
+| Epic                            | Stories | Tasks  | Story Points | Priority |
+| ------------------------------- | ------- | ------ | ------------ | -------- |
+| **Epic 1**: PWA Infrastructure  | 1       | 6      | 5            | High     |
+| **Epic 2**: Document Processing | 4       | 20     | 21           | High     |
+| **Epic 3**: Data Export         | 2       | 10     | 12           | High     |
+| **Epic 6**: UI & Experience     | 3       | 15     | 16           | Medium   |
+| **MVP TOTAL**                   | **10**  | **51** | **54**       | **High** |
 
-### Definition of Done
+### Future Enhancement Stories
 
-For each story to be considered complete:
+| Epic                            | Stories | Tasks  | Story Points | Priority |
+| ------------------------------- | ------- | ------ | ------------ | -------- |
+| **Epic 1**: Offline Features    | 1       | 4      | 8            | Low      |
+| **Epic 4**: Template Management | 3       | 14     | 18           | Medium   |
+| **Epic 5**: Document Generation | 3       | 14     | 15           | Medium   |
+| **FUTURE TOTAL**                | **7**   | **32** | **41**       | **Low**  |
+
+### MVP Definition of Done
+
+For each MVP story to be considered complete:
 
 - [ ] All acceptance criteria met
 - [ ] All tasks completed and tested
 - [ ] Code reviewed and documented
 - [ ] Responsive design implemented
-- [ ] Accessibility requirements met
+- [ ] Basic accessibility features
 - [ ] Error handling implemented
 - [ ] Performance requirements met
-- [ ] PWA functionality verified
+- [ ] SessionStorage functionality verified
 
-### Risk Assessment by Epic
+### Risk Assessment for MVP
 
-| Epic   | Risk Level | Key Risks                 | Mitigation                       |
-| ------ | ---------- | ------------------------- | -------------------------------- |
-| Epic 1 | Low        | Browser compatibility     | Progressive enhancement          |
-| Epic 2 | High       | OCR accuracy, performance | Image preprocessing, Web Workers |
-| Epic 3 | Medium     | Template complexity       | Comprehensive validation         |
-| Epic 4 | Medium     | Document formatting       | Thorough testing                 |
-| Epic 5 | Low        | User adoption             | User testing, onboarding         |
+| Epic   | Risk Level | Key Risks                  | Mitigation                       |
+| ------ | ---------- | -------------------------- | -------------------------------- |
+| Epic 1 | Low        | PWA installation issues    | Progressive enhancement          |
+| Epic 2 | High       | OCR accuracy, performance  | Image preprocessing, Web Workers |
+| Epic 3 | Low        | Excel export compatibility | Use well-tested xlsx library     |
+| Epic 6 | Low        | User adoption              | Simple, intuitive interface      |
 
 ---
 
-**Document Version**: 1.0  
+**Document Version**: 2.0  
 **Last Updated**: Current Date  
-**Total Estimated Duration**: 4 weeks (28 days)  
+**MVP Duration**: 4 weeks (28 days)  
+**Future Enhancements**: 3-4 weeks additional  
 **Team Size**: 1-2 developers  
 **Methodology**: Agile/Scrum with weekly sprints
