@@ -4,7 +4,6 @@ import { forwardRef } from 'react';
 import UploadButton from './UploadButton';
 
 export interface FileBrowserProps {
-  multiple?: boolean;
   accept?: string;
   disabled?: boolean;
   onFileSelect?: (_files: File[]) => void;
@@ -18,7 +17,6 @@ export interface FileBrowserProps {
 const FileBrowser = forwardRef<HTMLInputElement, FileBrowserProps>(
   (
     {
-      multiple = true,
       accept = 'image/jpeg,image/png,image/webp,application/pdf',
       disabled = false,
       onFileSelect,
@@ -52,7 +50,7 @@ const FileBrowser = forwardRef<HTMLInputElement, FileBrowserProps>(
         <input
           ref={ref}
           type="file"
-          multiple={multiple}
+          multiple={false}
           accept={accept}
           onChange={handleFileChange}
           disabled={disabled}

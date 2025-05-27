@@ -37,7 +37,10 @@ export default function HomePage() {
             device for maximum privacy.
           </p>
           <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="inline-flex items-center px-8 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors">
+            <Link
+              href="/file-upload"
+              className="inline-flex items-center px-8 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
+            >
               Start Processing
               <svg
                 className="ml-2 -mr-1 w-5 h-5"
@@ -50,7 +53,7 @@ export default function HomePage() {
                   clipRule="evenodd"
                 />
               </svg>
-            </button>
+            </Link>
             <Link
               href="#features"
               className="inline-flex items-center px-8 py-3 border border-gray-300 text-base font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
