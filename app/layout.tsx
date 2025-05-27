@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
+import ServiceWorkerRegistration from './components/ServiceWorkerRegistration';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -101,6 +102,7 @@ export default function RootLayout({
         <meta name="msapplication-config" content="/browserconfig.xml" />
       </head>
       <body className="font-sans antialiased bg-gray-50 text-gray-900">
+        <ServiceWorkerRegistration />
         <div id="root">
           <main className="min-h-screen">{children}</main>
         </div>

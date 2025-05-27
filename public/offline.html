@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="ro">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Offline - Romanian ID Processor</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: linear-gradient(135deg, #002b7f 0%, #3b82f6 100%);
+        color: white;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+
+      .container {
+        text-align: center;
+        max-width: 500px;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 40px;
+        border: 1px solid rgba(252, 209, 22, 0.3);
+      }
+
+      .icon {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto 30px;
+        background: #fcd116;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 40px;
+      }
+
+      h1 {
+        font-size: 28px;
+        margin-bottom: 16px;
+        color: #fcd116;
+      }
+
+      p {
+        font-size: 16px;
+        line-height: 1.6;
+        margin-bottom: 20px;
+        opacity: 0.9;
+      }
+
+      .features {
+        list-style: none;
+        margin: 30px 0;
+        text-align: left;
+      }
+
+      .features li {
+        padding: 8px 0;
+        padding-left: 30px;
+        position: relative;
+        opacity: 0.8;
+      }
+
+      .features li::before {
+        content: '✓';
+        position: absolute;
+        left: 0;
+        color: #fcd116;
+        font-weight: bold;
+      }
+
+      .retry-btn {
+        background: #fcd116;
+        color: #002b7f;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-top: 20px;
+      }
+
+      .retry-btn:hover {
+        background: #e6c01f;
+        transform: translateY(-2px);
+      }
+
+      .status {
+        margin-top: 30px;
+        padding: 15px;
+        background: rgba(206, 17, 38, 0.2);
+        border-radius: 8px;
+        border-left: 4px solid #ce1126;
+      }
+
+      .romanian-flag {
+        display: flex;
+        height: 4px;
+        margin: 20px 0;
+        border-radius: 2px;
+        overflow: hidden;
+      }
+
+      .flag-blue {
+        background: #002b7f;
+        flex: 1;
+      }
+      .flag-yellow {
+        background: #fcd116;
+        flex: 1;
+      }
+      .flag-red {
+        background: #ce1126;
+        flex: 1;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="icon">📱</div>
+
+      <h1>Aplicația este offline</h1>
+
+      <p>
+        Nu vă faceți griji! Aplicația Romanian ID Processor funcționează și
+        offline pentru a vă proteja confidențialitatea.
+      </p>
+
+      <div class="romanian-flag">
+        <div class="flag-blue"></div>
+        <div class="flag-yellow"></div>
+        <div class="flag-red"></div>
+      </div>
+
+      <ul class="features">
+        <li>Procesarea documentelor se face local pe dispozitiv</li>
+        <li>Datele personale rămân private și securizate</li>
+        <li>Nu sunt necesare conexiuni la servere externe</li>
+        <li>Funcționalitate completă offline</li>
+      </ul>
+
+      <div class="status">
+        <strong>Status:</strong> Offline - Toate funcțiile de procesare sunt
+        disponibile
+      </div>
+
+      <button class="retry-btn" onclick="window.location.reload()">
+        Încearcă din nou
+      </button>
+
+      <p style="margin-top: 20px; font-size: 14px; opacity: 0.7">
+        Când conexiunea va fi restabilită, aplicația se va sincroniza automat.
+      </p>
+    </div>
+
+    <script>
+      // Check for online status and auto-reload
+      window.addEventListener('online', () => {
+        window.location.reload();
+      });
+
+      // Update status based on connection
+      function updateStatus() {
+        const status = document.querySelector('.status');
+        if (navigator.onLine) {
+          status.innerHTML =
+            '<strong>Status:</strong> Online - Toate funcțiile sunt disponibile';
+          status.style.background = 'rgba(34, 197, 94, 0.2)';
+          status.style.borderLeftColor = '#22c55e';
+        } else {
+          status.innerHTML =
+            '<strong>Status:</strong> Offline - Toate funcțiile de procesare sunt disponibile';
+          status.style.background = 'rgba(206, 17, 38, 0.2)';
+          status.style.borderLeftColor = '#ce1126';
+        }
+      }
+
+      // Initial status check
+      updateStatus();
+
+      // Listen for connection changes
+      window.addEventListener('online', updateStatus);
+      window.addEventListener('offline', updateStatus);
+    </script>
+  </body>
+</html>

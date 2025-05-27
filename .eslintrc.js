@@ -19,8 +19,6 @@ module.exports = {
   },
   rules: {
     // General rules
-    'no-console': 'warn',
-    'no-debugger': 'error',
     'prefer-const': 'error',
     'no-var': 'error',
 

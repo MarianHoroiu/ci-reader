@@ -1,306 +1,238 @@
 # Romanian ID Processing PWA
 
-A Progressive Web Application (PWA) built with Next.js 15 and React 19 for processing Romanian
-Identity Cards and automatically filling document templates. All processing happens locally on your
-device for maximum privacy.
+A Progressive Web Application for processing Romanian Identity Cards and auto-filling document
+templates with extracted personal data. Built with Next.js 15, React 19, and TypeScript for
+privacy-focused, offline-capable document processing.
 
 ## 🚀 Features
 
-- **Privacy-First**: All OCR and document processing happens locally
+### Core Functionality
+
+- **Romanian ID Card Processing**: Extract personal data from Romanian Identity Cards
+- **Auto-fill Templates**: Automatically populate document templates with extracted information
+- **Privacy-First**: All processing happens locally on your device
 - **Offline Capable**: Full functionality without internet connection
-- **PWA Technology**: Install on any device, works like a native app
-- **Romanian ID Support**: Specifically designed for Romanian Identity Cards
-- **Template Filling**: Automatically fill PDF and DOCX templates
-- **Batch Processing**: Process multiple documents simultaneously
-- **Modern UI**: Built with Tailwind CSS and responsive design
+- **Progressive Web App**: Install and use like a native mobile app
 
-## 🛠 Technology Stack
+### PWA Features
 
-- **Framework**: Next.js 15 with App Router
-- **Frontend**: React 19 with TypeScript
-- **Styling**: Tailwind CSS
-- **Build Tool**: Turbopack (stable)
-- **PWA**: Service Workers for offline functionality
-- **OCR**: Tesseract.js (client-side)
-- **Document Processing**: PDF.js, PDF-lib, docx.js
-- **Storage**: IndexedDB for local data persistence
+- **Installable**: Add to home screen on mobile devices
+- **Offline Support**: Works completely offline with service worker caching
+- **Push Notifications**: Receive updates and processing status notifications
+- **Background Sync**: Sync data when connection is restored
+- **Responsive Design**: Optimized for all screen sizes and devices
 
-## 📋 Prerequisites
+## 📱 PWA Manifest Configuration
 
-- Node.js 18.0.0 or higher
-- npm 8.0.0 or higher
-- Modern browser with PWA support
+### Icons
+
+The application includes a complete set of icons for all platforms:
+
+- **Favicon**: `favicon.ico`, `icon.svg` (32x32)
+- **PWA Icons**: 72x72, 96x96, 128x128, 144x144, 192x192, 512x512 (SVG format)
+- **Apple Touch Icon**: 180x180 PNG format
+- **Microsoft Tiles**: Configured via `browserconfig.xml`
+
+### Manifest Features
+
+- **App Name**: "Romanian ID Processor"
+- **Theme Colors**: Romanian flag colors (#002b7f, #fcd116, #ce1126)
+- **Display Mode**: Standalone (full-screen app experience)
+- **Orientation**: Portrait (optimized for document scanning)
+- **Start URL**: "/" with UTM tracking
+- **Scope**: Full application scope
+- **Background Sync**: Enabled for offline data processing
+- **Shortcuts**: Quick access to main features
+- **Screenshots**: App store preview images
+
+## 🛠️ Technology Stack
+
+- **Framework**: Next.js 15.3.2 with App Router
+- **React**: React 19 with TypeScript
+- **Styling**: Tailwind CSS with Romanian theme colors
+- **PWA**: Service Worker with Workbox for caching strategies
+- **Build Tool**: Turbopack for fast development
+- **Quality Tools**: ESLint, Prettier, TypeScript strict mode
+
+## 🏗️ Project Structure
+
+```
+07-CI-agent/
+├── app/                          # Next.js App Router
+│   ├── components/              # React components
+│   │   └── ServiceWorkerRegistration.tsx
+│   ├── globals.css             # Global styles with Tailwind
+│   ├── layout.tsx              # Root layout with PWA metadata
+│   └── page.tsx                # Landing page
+├── public/                      # Static assets
+│   ├── icons/                  # PWA icons (SVG format)
+│   │   ├── icon-72x72.svg
+│   │   ├── icon-96x96.svg
+│   │   ├── icon-128x128.svg
+│   │   ├── icon-144x144.svg
+│   │   ├── icon-192x192.svg
+│   │   └── icon-512x512.svg
+│   ├── manifest.json           # PWA manifest
+│   ├── sw.js                   # Service worker
+│   ├── offline.html            # Offline fallback page
+│   ├── browserconfig.xml       # Microsoft tile configuration
+│   ├── favicon.ico             # Browser favicon
+│   ├── icon.svg                # Main app icon
+│   └── apple-touch-icon.png    # iOS home screen icon
+├── lib/                        # Utility libraries
+│   └── sw-utils.ts            # Service worker utilities
+├── next.config.ts              # Next.js configuration
+├── tailwind.config.js          # Tailwind CSS configuration
+├── tsconfig.json              # TypeScript configuration
+└── package.json               # Dependencies and scripts
+```
 
 ## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js 18.17 or later
+- npm, yarn, or pnpm package manager
 
 ### Installation
 
 1. **Clone the repository**
 
    ```bash
-   git clone <repository-url>
-   cd romanian-id-processing-pwa
+   git clone https://github.com/MarianHoroiu/ci-reader.git
+   cd ci-reader
    ```
 
 2. **Install dependencies**
 
    ```bash
    npm install
+   # or
+   yarn install
+   # or
+   pnpm install
    ```
 
 3. **Start development server**
 
    ```bash
    npm run dev
+   # or
+   yarn dev
+   # or
+   pnpm dev
    ```
 
-4. **Open your browser** Navigate to [http://localhost:3000](http://localhost:3000)
-
-### Development with Turbopack
-
-For faster development builds, the project uses Turbopack by default:
-
-```bash
-npm run dev  # Uses --turbo flag automatically
-```
-
-## 📜 Available Scripts
+4. **Open in browser** Navigate to [http://localhost:3000](http://localhost:3000)
 
 ### Development Scripts
 
-- **`npm run dev`** - Start development server with Turbopack
-- **`npm run build`** - Build the application for production
-- **`npm run start`** - Start production server
-
-### Code Quality Scripts
-
-- **`npm run type-check`** - Run TypeScript type checking without compilation
-- **`npm run lint`** - Run ESLint with TypeScript rules
-- **`npm run lint:fix`** - Run ESLint with automatic fixing
-- **`npm run format`** - Format all files using Prettier
-- **`npm run format:check`** - Check if files are properly formatted
-- **`npm run check`** - Run all checks (type-check, lint, format) sequentially
-
-### Script Usage Examples
-
 ```bash
-# Check code quality before committing
-npm run check
+# Development
+npm run dev          # Start development server with Turbopack
+npm run build        # Build for production
+npm run start        # Start production server
 
-# Fix linting and formatting issues
-npm run lint:fix && npm run format
-
-# Type check only
-npm run type-check
-
-# Check formatting without changing files
-npm run format:check
+# Quality Assurance
+npm run type-check   # TypeScript type checking
+npm run lint         # ESLint code linting
+npm run format       # Format code with Prettier
+npm run format:check # Check code formatting
+npm run check        # Run all quality checks
 ```
 
-## 🏗 Project Structure
+## 📱 PWA Installation
 
-```
-romanian-id-processing-pwa/
-├── app/                    # Next.js App Router directory
-│   ├── components/         # Reusable React components
-│   ├── lib/               # Utility libraries and helpers
-│   ├── types/             # TypeScript type definitions
-│   ├── utils/             # Utility functions
-│   ├── hooks/             # Custom React hooks
-│   ├── styles/            # Additional CSS files
-│   ├── layout.tsx         # Root layout component
-│   ├── page.tsx           # Home page component
-│   └── globals.css        # Global styles with Tailwind
-├── public/                # Static assets
-├── documents/             # Project documentation
-├── next.config.ts         # Next.js configuration (TypeScript)
-├── tsconfig.json          # TypeScript configuration
-├── tailwind.config.js     # Tailwind CSS configuration
-├── postcss.config.js      # PostCSS configuration
-├── .eslintrc.js          # ESLint configuration
-├── .prettierrc.json      # Prettier configuration
-└── package.json          # Project dependencies and scripts
-```
+### Mobile Devices (iOS/Android)
 
-## 🎨 Styling
+1. Open the app in your mobile browser
+2. Look for "Add to Home Screen" prompt or menu option
+3. Follow the installation prompts
+4. The app will appear on your home screen like a native app
 
-The project uses Tailwind CSS with custom theme extensions:
+### Desktop (Chrome/Edge)
 
-- **Primary Colors**: Blue color palette for main UI elements
-- **Romanian Theme**: Colors inspired by Romanian flag
-- **Status Colors**: For processing states (success, error, warning)
-- **Custom Components**: Pre-built button and card styles
-- **Responsive Design**: Mobile-first approach
-- **Accessibility**: High contrast and reduced motion support
-
-### Custom Tailwind Classes
-
-```css
-/* Component Classes */
-.btn-primary     /* Primary button styling */
-.btn-secondary   /* Secondary button styling */
-.card           /* Basic card styling */
-.card-hover     /* Card with hover effects */
-
-/* Utility Classes */
-.text-balance   /* Balanced text wrapping */
-.loading-skeleton /* Skeleton loading animation */
-.loading-spinner  /* Spinner animation */
-```
+1. Open the app in Chrome or Edge
+2. Look for the install icon in the address bar
+3. Click "Install" when prompted
+4. The app will be available in your applications menu
 
 ## 🔧 Configuration
 
-### TypeScript Configuration
+### Environment Variables
 
-The project uses strict TypeScript configuration with:
+Create a `.env.local` file for local development:
 
-- Strict mode enabled
-- Path aliases for clean imports (`@/components/*`, `@/lib/*`, etc.)
-- Next.js plugin integration
-- Incremental compilation for faster builds
+```env
+# App Configuration
+NEXT_PUBLIC_APP_NAME="Romanian ID Processor"
+NEXT_PUBLIC_APP_URL="https://your-domain.com"
 
-### ESLint Configuration
-
-Comprehensive linting setup with:
-
-- TypeScript-specific rules
-- Next.js recommended configuration
-- React hooks rules
-- Prettier integration for consistent formatting
-
-### Next.js Configuration
-
-Modern Next.js 15 setup featuring:
-
-- App Router architecture
-- TypeScript configuration file (`next.config.ts`)
-- Turbopack for development builds
-- PWA-ready security headers
-- Image optimization
-- Experimental features (PPR, React Compiler)
-
-## 🌐 PWA Features
-
-The application is designed as a Progressive Web App with:
-
-- **Installable**: Can be installed on desktop and mobile devices
-- **Offline Capable**: Service workers for offline functionality
-- **Responsive**: Works on all screen sizes
-- **Fast**: Optimized loading and performance
-- **Secure**: HTTPS required for PWA features
-
-### PWA Manifest
-
-The app includes a comprehensive web app manifest (`/manifest.json`) with:
-
-- **App Identity**: Name, description, and branding
-- **Display Mode**: Standalone for native-like experience
-- **Theme Colors**: Romanian-inspired color scheme
-- **Icons**: Multiple sizes (72x72 to 512x512) for all devices
-- **Shortcuts**: Quick actions for common tasks
-- **Screenshots**: For app store listings
-- **Orientation**: Portrait-primary for optimal mobile experience
-
-### PWA Installation
-
-1. Open the app in a supported browser
-2. Look for the "Install" prompt or button
-3. Follow browser-specific installation steps
-4. App will appear on your home screen/desktop
-
-### PWA Icons
-
-The app includes optimized icons for all platforms:
-
-- **Standard Icons**: 72x72, 96x96, 128x128, 144x144, 152x152, 192x192, 384x384, 512x512
-- **Apple Touch Icon**: 180x180 for iOS devices
-- **Favicon**: SVG and ICO formats
-- **Microsoft Tiles**: Configured via browserconfig.xml
-
-## 🔒 Privacy & Security
-
-- **Local Processing**: All OCR and document processing happens on your device
-- **No Data Transmission**: No personal data is sent to external servers
-- **Secure Headers**: Comprehensive security headers configured
-- **HTTPS Required**: Secure connection required for all PWA features
-
-## 🧪 Development Workflow
-
-### Before Committing
-
-Always run the comprehensive check:
-
-```bash
-npm run check
+# PWA Configuration
+NEXT_PUBLIC_VAPID_PUBLIC_KEY="your-vapid-public-key"
 ```
 
-This will:
+### PWA Customization
 
-1. Check TypeScript types
-2. Run ESLint for code quality
-3. Verify Prettier formatting
+- **Colors**: Edit `tailwind.config.js` for theme colors
+- **Icons**: Replace SVG files in `public/icons/`
+- **Manifest**: Modify `public/manifest.json`
+- **Service Worker**: Update `public/sw.js` for caching strategies
 
-### Code Formatting
+## 🛡️ Privacy & Security
 
-The project uses Prettier with specific configuration:
+- **Local Processing**: All document processing happens on your device
+- **No Data Upload**: Personal information never leaves your device
+- **Offline First**: Works without internet connection
+- **Secure Storage**: Uses browser's secure storage APIs
+- **No Tracking**: Privacy-focused design with no analytics
 
-- Single quotes for strings
-- Semicolons required
-- 2-space indentation
-- 80 character line width
-- Trailing commas in ES5
+## 🌐 Browser Support
 
-### Linting Rules
+- **Chrome**: 88+ (full PWA support)
+- **Firefox**: 85+ (limited PWA support)
+- **Safari**: 14+ (iOS PWA support)
+- **Edge**: 88+ (full PWA support)
 
-ESLint configuration includes:
+## 📋 Task Implementation Status
 
-- TypeScript-specific rules
-- React and React Hooks rules
-- Next.js best practices
-- Accessibility guidelines
+### ✅ Task [01]-[01]: Initialize Next.js 15 project with TypeScript
 
-## 📊 Performance
+- [x] Next.js 15.3.2 with App Router
+- [x] React 19 with TypeScript 5.3.0
+- [x] Tailwind CSS with Romanian theme
+- [x] ESLint and Prettier configuration
+- [x] Development and build scripts
 
-### Next.js 15 Improvements
+### ✅ Task [01]-[02]: Configure PWA manifest.json
 
-- **40-60% faster builds** with Turbopack
-- **10-20% smaller bundles** with enhanced tree-shaking
-- **5-15% runtime performance improvement** with React 19
-
-### Optimization Features
-
-- Image optimization with WebP/AVIF support
-- Automatic code splitting
-- React 19 compiler optimizations
-- Partial prerendering (PPR)
-- Optimized font loading
+- [x] Complete PWA manifest with all required fields
+- [x] Romanian-themed icon set (72x72 to 512x512)
+- [x] Apple Touch Icon and Microsoft tile configuration
+- [x] Service worker integration
+- [x] Offline fallback page
+- [x] PWA metadata in layout.tsx
 
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Run `npm run check` to ensure code quality
-5. Commit your changes
-6. Push to your branch
-7. Create a Pull Request
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-## 📝 License
+## 📄 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🆘 Support
 
 For support and questions:
 
-- Check the documentation in the `documents/` folder
-- Review the project scope and requirements
-- Check existing issues and discussions
-
-## 🔄 Version History
-
-- **v0.1.0** - Initial Next.js 15 setup with TypeScript and PWA foundation
+- Create an issue on GitHub
+- Check the documentation
+- Review the PWA implementation guide
 
 ---
 
-Built with ❤️ using Next.js 15, React 19, and modern web technologies.
+**Romanian ID Processing PWA** - Privacy-focused document processing for Romanian Identity Cards

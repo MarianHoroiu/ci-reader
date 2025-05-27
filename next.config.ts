@@ -18,15 +18,7 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: false,
   },
 
-  // Enable Turbopack for faster development builds
-  turbo: {
-    rules: {
-      // Optimize for PWA assets
-      '*.worker.js': {
-        loaders: ['file-loader'],
-      },
-    },
-  },
+  // Turbopack is enabled via --turbo flag in package.json scripts
 
   // PWA and security headers preparation
   async headers() {
