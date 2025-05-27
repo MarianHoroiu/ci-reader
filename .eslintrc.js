@@ -21,6 +21,7 @@ module.exports = {
     // General rules
     'prefer-const': 'error',
     'no-var': 'error',
+    'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
 
     // React specific rules
     'react/prop-types': 'off', // TypeScript handles this
