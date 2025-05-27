@@ -24,12 +24,15 @@ so we can confirm we're on the right track.
 
 - Focus only on the scope task but take into account what is in other tasks so you won't overlap
 - Don't do tests
+- Don't create demo/test files unless it's explicitly requested in the task.
+- Build the functionality ready for production, unless it's explicitly requested in the task.
 - Linting, type-checks, format and build should have no issues. Check with `npm run check` and
   `npm run build` after you finished and ensure there are no errors/warnings.
 - At the end of the task, if there are no errors/warnings, commit the changes in a single commit
   with the message "implement Task-[story-number]-[task-number]:
-  [short-and-concise-task-description]: a list of task key points] " and DO NOT push the changes to
-  the remote repository. This is an example of a commit message:
+  [short-and-concise-task-description]: a list of task key points" and DO NOT push the changes to
+  the remote repository. After each key point you should add a new line. This is an example of a
+  commit message:
 
   ```
   implement Task-01-03: update PWA configurations and enhance service worker functionality:

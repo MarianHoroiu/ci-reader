@@ -106,14 +106,13 @@ const nextConfig: NextConfig = {
       if (!dev) {
         config.plugins.push(
           new InjectManifest({
-            swSrc: './public/sw.js',
-            swDest: '../public/sw.js',
+            swSrc: './src/sw.js',
+            swDest: 'sw.js',
             exclude: [
               /\.map$/,
               /manifest$/,
               /\.htaccess$/,
               /service-worker\.js$/,
-              /sw\.js$/,
             ],
             maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB
           })
