@@ -199,6 +199,18 @@ export function useInstallPrompt(): UseInstallPromptReturn {
     setState(prev => ({ ...prev, isInstalling: true, error: null }));
 
     try {
+      // Handle Arc browser specifically
+      if (state.capabilities.browser === 'arc') {
+        setState(prev => ({
+          ...prev,
+          showIOSInstructions: true,
+          isInstalling: false,
+          error:
+            'Arc browser does not support PWA installation. Please try Chrome, Edge, or Safari.',
+        }));
+        return false;
+      }
+
       // Handle iOS case
       if (state.capabilities.platform === 'ios') {
         setState(prev => ({
@@ -211,26 +223,51 @@ export function useInstallPrompt(): UseInstallPromptReturn {
 
       // Handle browsers with beforeinstallprompt support
       if (deferredPromptRef.current) {
-        await deferredPromptRef.current.prompt();
-        const choiceResult = await deferredPromptRef.current.userChoice;
+        // Add timeout for browsers that don't properly handle the prompt
+        const installPromise = Promise.race([
+          (async () => {
+            await deferredPromptRef.current!.prompt();
+            return await deferredPromptRef.current!.userChoice;
+          })(),
+          new Promise<{ outcome: 'timeout' }>((_, reject) =>
+            setTimeout(
+              () => reject(new Error('Installation prompt timeout')),
+              5000
+            )
+          ),
+        ]);
 
-        if (choiceResult.outcome === 'accepted') {
+        try {
+          const choiceResult = await installPromise;
+
+          if (choiceResult.outcome === 'accepted') {
+            setState(prev => ({
+              ...prev,
+              isInstalled: true,
+              canShowPrompt: false,
+              isInstalling: false,
+            }));
+            deferredPromptRef.current = null;
+            return true;
+          } else {
+            // User dismissed the prompt
+            markInstallPromptDismissed();
+            setState(prev => ({
+              ...prev,
+              hasBeenDismissed: true,
+              canShowPrompt: false,
+              isInstalling: false,
+            }));
+            return false;
+          }
+        } catch (timeoutError) {
+          // Handle timeout or other errors
           setState(prev => ({
             ...prev,
-            isInstalled: true,
-            canShowPrompt: false,
             isInstalling: false,
-          }));
-          deferredPromptRef.current = null;
-          return true;
-        } else {
-          // User dismissed the prompt
-          markInstallPromptDismissed();
-          setState(prev => ({
-            ...prev,
-            hasBeenDismissed: true,
-            canShowPrompt: false,
-            isInstalling: false,
+            showIOSInstructions: true,
+            error:
+              'Installation prompt failed. Your browser may not support PWA installation.',
           }));
           return false;
         }

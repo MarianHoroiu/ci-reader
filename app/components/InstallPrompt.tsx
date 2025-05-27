@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useInstallPrompt } from '../hooks/useInstallPrompt';
+import { getBrowserInstallInstructions } from '../../lib/pwa-utils';
 import InstallButton from './InstallButton';
 import styles from '../styles/install-prompt.module.css';
 
@@ -25,9 +26,12 @@ export default function InstallPrompt({
   onInstallError,
   onDismiss,
 }: InstallPromptProps) {
-  const { state, actions, iosInstructions } = useInstallPrompt();
+  const { state, actions } = useInstallPrompt();
   const [isVisible, setIsVisible] = useState(false);
   const [hasShownOnce, setHasShownOnce] = useState(false);
+
+  // Get browser-specific instructions
+  const browserInstructions = getBrowserInstallInstructions();
 
   // Show prompt after delay if installable
   useEffect(() => {
@@ -104,16 +108,20 @@ export default function InstallPrompt({
               />
             </svg>
           </div>
-          <h3 className={styles.modalTitle}>Install App</h3>
+          <h3 className={styles.modalTitle}>
+            {browserInstructions.canInstall
+              ? 'Install App'
+              : 'Installation Not Available'}
+          </h3>
           <p className={styles.modalSubtitle}>
-            {iosInstructions.browserSpecific
+            {browserInstructions.canInstall
               ? 'Follow these steps to install the app:'
-              : 'Please open this page in Safari to install:'}
+              : 'Installation instructions for your browser:'}
           </p>
         </div>
 
         <div className={styles.instructionsList}>
-          {iosInstructions.steps.map((step, index) => (
+          {browserInstructions.steps.map((step, index) => (
             <div key={index} className={styles.instructionItem}>
               <div className={styles.instructionNumber}>{index + 1}</div>
               <div className={styles.instructionText}>{step}</div>
@@ -128,14 +136,18 @@ export default function InstallPrompt({
           >
             Got it
           </button>
-          {!iosInstructions.browserSpecific && (
+          {!browserInstructions.canInstall && (
             <button
               className={`${styles.modalButton} ${styles.modalButtonPrimary}`}
               onClick={() => {
-                window.location.reload();
+                // Copy current URL to clipboard for easy sharing
+                navigator.clipboard?.writeText(window.location.href);
+                alert(
+                  'URL copied to clipboard! Open it in a supported browser.'
+                );
               }}
             >
-              Open in Safari
+              Copy URL
             </button>
           )}
         </div>

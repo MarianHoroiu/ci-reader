@@ -6,7 +6,7 @@
 export interface PWAInstallCapabilities {
   canInstall: boolean;
   platform: 'ios' | 'android' | 'desktop' | 'unknown';
-  browser: 'chrome' | 'firefox' | 'safari' | 'edge' | 'unknown';
+  browser: 'chrome' | 'firefox' | 'safari' | 'edge' | 'arc' | 'unknown';
   supportsBeforeInstallPrompt: boolean;
   isStandalone: boolean;
   isInstalled: boolean;
@@ -49,6 +49,15 @@ export function detectBrowser(): PWAInstallCapabilities['browser'] {
   if (typeof window === 'undefined') return 'unknown';
 
   const userAgent = window.navigator.userAgent.toLowerCase();
+
+  // Arc browser detection (Arc uses Chrome engine but has different behavior)
+  if (
+    userAgent.includes('arc/') ||
+    (userAgent.includes('chrome/') &&
+      window.navigator.userAgent.includes('Arc'))
+  ) {
+    return 'arc';
+  }
 
   if (userAgent.includes('edg/')) return 'edge';
   if (userAgent.includes('chrome/') && !userAgent.includes('edg/'))
@@ -94,6 +103,9 @@ export function supportsBeforeInstallPrompt(): boolean {
   // iOS Safari doesn't support beforeinstallprompt
   if (platform === 'ios') return false;
 
+  // Arc browser has beforeinstallprompt but no UI for installation
+  if (browser === 'arc') return false;
+
   // Chrome and Edge support it
   if (browser === 'chrome' || browser === 'edge') return true;
 
@@ -114,6 +126,9 @@ export function canInstallPWA(): boolean {
 
   // Already installed
   if (isAppInstalled()) return false;
+
+  // Arc browser doesn't support PWA installation
+  if (browser === 'arc') return false;
 
   // iOS Safari supports manual installation
   if (platform === 'ios' && browser === 'safari') return true;
@@ -176,15 +191,32 @@ export async function checkPWAInstallCriteria(): Promise<{
 }
 
 /**
- * Get iOS-specific installation instructions
+ * Get browser-specific installation instructions
  */
-export function getIOSInstallInstructions(): {
+export function getBrowserInstallInstructions(): {
   steps: string[];
   browserSpecific: boolean;
+  canInstall: boolean;
 } {
   const browser = detectBrowser();
+  const platform = detectPlatform();
 
-  if (browser === 'safari') {
+  // Arc browser specific message
+  if (browser === 'arc') {
+    return {
+      steps: [
+        'Arc browser currently does not support PWA installation',
+        'Please try using Chrome, Edge, or Safari instead',
+        'Copy this URL and open it in a supported browser',
+        'Then you can install the app from there',
+      ],
+      browserSpecific: true,
+      canInstall: false,
+    };
+  }
+
+  // iOS Safari
+  if (platform === 'ios' && browser === 'safari') {
     return {
       steps: [
         'Tap the Share button at the bottom of the screen',
@@ -193,6 +225,33 @@ export function getIOSInstallInstructions(): {
         'Tap "Add" to install the app',
       ],
       browserSpecific: true,
+      canInstall: true,
+    };
+  }
+
+  // Chrome/Edge
+  if (browser === 'chrome' || browser === 'edge') {
+    return {
+      steps: [
+        'Click the install button or look for the install icon in the address bar',
+        'Click "Install" in the popup dialog',
+        'The app will be installed and available in your apps',
+      ],
+      browserSpecific: true,
+      canInstall: true,
+    };
+  }
+
+  // Firefox
+  if (browser === 'firefox') {
+    return {
+      steps: [
+        'Firefox has limited PWA support',
+        'You can bookmark this page for quick access',
+        'Or try using Chrome or Edge for full installation',
+      ],
+      browserSpecific: true,
+      canInstall: false,
     };
   }
 
@@ -204,6 +263,21 @@ export function getIOSInstallInstructions(): {
       'Tap "Add" to install',
     ],
     browserSpecific: false,
+    canInstall: true,
+  };
+}
+
+/**
+ * Get iOS-specific installation instructions (legacy function for backward compatibility)
+ */
+export function getIOSInstallInstructions(): {
+  steps: string[];
+  browserSpecific: boolean;
+} {
+  const instructions = getBrowserInstallInstructions();
+  return {
+    steps: instructions.steps,
+    browserSpecific: instructions.browserSpecific,
   };
 }
 
