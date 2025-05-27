@@ -7,6 +7,7 @@ import {
   getManifestSecurityHeaders,
   isDevelopment,
 } from './lib/security-headers';
+import { InjectManifest } from 'workbox-webpack-plugin';
 
 const nextConfig: NextConfig = {
   // Enable experimental features for Next.js 15
@@ -91,8 +92,8 @@ const nextConfig: NextConfig = {
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
 
-  // Webpack configuration for PWA assets
-  webpack: (config, { isServer }) => {
+  // Webpack configuration for PWA assets and Workbox
+  webpack: (config, { isServer, dev }) => {
     // Handle service worker files
     if (!isServer) {
       config.resolve.fallback = {
@@ -100,6 +101,24 @@ const nextConfig: NextConfig = {
         fs: false,
         path: false,
       };
+
+      // Add Workbox plugin for enhanced service worker functionality
+      if (!dev) {
+        config.plugins.push(
+          new InjectManifest({
+            swSrc: './public/sw.js',
+            swDest: '../public/sw.js',
+            exclude: [
+              /\.map$/,
+              /manifest$/,
+              /\.htaccess$/,
+              /service-worker\.js$/,
+              /sw\.js$/,
+            ],
+            maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB
+          })
+        );
+      }
     }
 
     return config;
