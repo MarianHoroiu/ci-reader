@@ -1,4 +1,12 @@
 import type { NextConfig } from 'next';
+import {
+  getGlobalSecurityHeaders,
+  getServiceWorkerSecurityHeaders,
+  getAPISecurityHeaders,
+  getStaticAssetSecurityHeaders,
+  getManifestSecurityHeaders,
+  isDevelopment,
+} from './lib/security-headers';
 
 const nextConfig: NextConfig = {
   // Enable experimental features for Next.js 15
@@ -23,38 +31,53 @@ const nextConfig: NextConfig = {
 
   // Turbopack is enabled via --turbo flag in package.json scripts
 
-  // PWA and security headers preparation
+  // Comprehensive PWA security headers
   async headers() {
+    const isDev = isDevelopment();
+
     return [
       {
-        // Apply security headers to all routes
+        // Global security headers for all routes
         source: '/(.*)',
+        headers: getGlobalSecurityHeaders(isDev),
+      },
+      {
+        // Service Worker specific security headers
+        source: '/sw.js',
+        headers: getServiceWorkerSecurityHeaders(),
+      },
+      {
+        // API routes security headers
+        source: '/api/:path*',
+        headers: getAPISecurityHeaders(),
+      },
+      {
+        // PWA manifest security headers
+        source: '/manifest.json',
+        headers: getManifestSecurityHeaders(),
+      },
+      {
+        // Static assets security headers (Next.js static files)
+        source: '/_next/static/:path*',
+        headers: getStaticAssetSecurityHeaders(),
+      },
+      {
+        // Public static assets security headers
+        source: '/icons/:path*',
+        headers: getStaticAssetSecurityHeaders(),
+      },
+      {
+        // Favicon and other root static files
+        source:
+          '/(favicon.ico|icon.svg|apple-touch-icon.png|robots.txt|sitemap.xml)',
         headers: [
           {
-            key: 'X-Frame-Options',
-            value: 'DENY',
+            key: 'Cache-Control',
+            value: 'public, max-age=86400', // 24 hours
           },
           {
             key: 'X-Content-Type-Options',
             value: 'nosniff',
-          },
-          {
-            key: 'Referrer-Policy',
-            value: 'origin-when-cross-origin',
-          },
-          {
-            key: 'X-DNS-Prefetch-Control',
-            value: 'on',
-          },
-        ],
-      },
-      {
-        // Cache control for API routes (explicit caching for Next.js 15)
-        source: '/api/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'no-store, max-age=0',
           },
         ],
       },

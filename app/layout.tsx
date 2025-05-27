@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import ServiceWorkerRegistration from './components/ServiceWorkerRegistration';
 import InstallPrompt from './components/InstallPrompt';
+import { SecurityProvider } from './components/SecurityProvider';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -103,11 +104,16 @@ export default function RootLayout({
         <meta name="msapplication-config" content="/browserconfig.xml" />
       </head>
       <body className="font-sans antialiased bg-gray-50 text-gray-900">
-        <ServiceWorkerRegistration />
-        <InstallPrompt variant="card" showAfterDelay={5000} />
-        <div id="root">
-          <main className="min-h-screen">{children}</main>
-        </div>
+        <SecurityProvider
+          enableCSPReporting={true}
+          enableSecurityMonitoring={true}
+        >
+          <ServiceWorkerRegistration />
+          <InstallPrompt variant="card" showAfterDelay={5000} />
+          <div id="root">
+            <main className="min-h-screen">{children}</main>
+          </div>
+        </SecurityProvider>
       </body>
     </html>
   );
