@@ -1,9 +1,10 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useFileUpload } from '@/hooks/useFileUpload';
 import FileDropArea from './FileDropArea';
 import FileBrowser from './FileBrowser';
+import ValidationMessage from './ValidationMessage';
 import { formatFileSize } from '@/lib/utils/file-upload';
 
 export interface FileUploadZoneProps {
@@ -25,6 +26,38 @@ export default function FileUploadZone({
   className = '',
   children,
 }: FileUploadZoneProps) {
+  // State for validation errors
+  const [validationErrors, setValidationErrors] = useState<
+    Array<{
+      file: File;
+      error: string;
+      errorCode: string;
+    }>
+  >([]);
+
+  const handleFilesRejected = useCallback(
+    (
+      rejectedFiles: Array<{
+        file: File;
+        error: string;
+        errorCode: string;
+      }>
+    ) => {
+      setValidationErrors(rejectedFiles);
+      onFilesRejected?.(rejectedFiles);
+    },
+    [onFilesRejected]
+  );
+
+  const handleFilesSelected = useCallback(
+    (files: File[]) => {
+      // Clear validation errors when valid files are selected
+      setValidationErrors([]);
+      onFilesSelected?.(files);
+    },
+    [onFilesSelected]
+  );
+
   const {
     dragState,
     isDragActive,
@@ -39,21 +72,19 @@ export default function FileUploadZone({
     removeFile,
     getInputProps,
   } = useFileUpload({
-    ...(onFilesSelected && { onFilesSelected }),
-    ...(onFilesRejected && { onFilesRejected }),
+    onFilesSelected: handleFilesSelected,
+    onFilesRejected: handleFilesRejected,
   });
 
   const handleFileRemove = useCallback(() => {
     removeFile();
+    setValidationErrors([]); // Clear errors when file is removed
     onFileRemove?.();
   }, [removeFile, onFileRemove]);
 
-  const handleFilesSelected = useCallback(
-    (files: File[]) => {
-      onFilesSelected?.(files);
-    },
-    [onFilesSelected]
-  );
+  const dismissValidationError = useCallback((index: number) => {
+    setValidationErrors(prev => prev.filter((_, i) => i !== index));
+  }, []);
 
   return (
     <div className={`w-full ${className}`}>
@@ -119,12 +150,16 @@ export default function FileUploadZone({
               <div className="space-y-2">
                 <h3 className="text-lg font-medium text-gray-900">
                   {isDragActive
-                    ? 'Drop file here'
+                    ? dragState === 'invalid'
+                      ? 'Invalid file type'
+                      : 'Drop file here'
                     : 'Upload Romanian ID Document'}
                 </h3>
                 <p className="text-sm text-gray-600">
                   {isDragActive
-                    ? 'Release to upload your file'
+                    ? dragState === 'invalid'
+                      ? 'This file type is not supported'
+                      : 'Release to upload your file'
                     : 'Drag and drop your file here, or click to browse'}
                 </p>
               </div>
@@ -149,6 +184,21 @@ export default function FileUploadZone({
             </div>
           )}
         </FileDropArea>
+
+        {/* Validation errors display */}
+        {validationErrors.length > 0 && (
+          <div className="mt-6 space-y-3">
+            {validationErrors.map((error, index) => (
+              <ValidationMessage
+                key={`${error.file.name}-${index}`}
+                message={error.error}
+                errorCode={error.errorCode as any}
+                onDismiss={() => dismissValidationError(index)}
+                className="animate-in slide-in-from-top-2 duration-300"
+              />
+            ))}
+          </div>
+        )}
 
         {/* Selected file display */}
         {uploadedFile && (
