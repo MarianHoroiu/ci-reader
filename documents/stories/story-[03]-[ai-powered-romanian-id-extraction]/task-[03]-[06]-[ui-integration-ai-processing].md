@@ -1,4 +1,4 @@
-# Task 03-06: Integrate AI Processing with Existing Upload UI
+# Task 03-06: Integrate AI Processing with Upload Interface
 
 ## Parent Story
 
@@ -6,69 +6,69 @@ Story 03: AI-Powered Romanian ID Extraction
 
 ## Task Description
 
-Connect AI processing pipeline to existing file upload interface. This task seamlessly integrates
-the AI-powered Romanian ID extraction functionality with the existing upload UI, ensuring a smooth
-user experience while maintaining the established design patterns and user workflows.
+Seamlessly integrate Qwen2.5-VL-7B-Instruct AI processing capabilities with the existing file upload
+interface, creating a unified user experience for Romanian ID extraction. This task connects the AI
+processing pipeline with the user interface while maintaining optimal performance and user feedback.
 
 ## Implementation Details
 
 ### Files to Modify
 
-- Modify `app/file-upload/page.tsx` - Main upload page integration
-- Create `app/lib/hooks/useRomanianIDAI.ts` - AI processing integration hook
-- Modify `app/components/ui/FileUpload.tsx` - Upload component enhancement
+- Modify `app/file-upload/page.tsx` - Main upload interface integration
+- Create `app/lib/hooks/useQwenAIExtraction.ts` - Qwen2.5-VL processing hook
 - Create `app/components/ai/AIExtractionResults.tsx` - Results display component
-- Modify `app/lib/types/upload-types.ts` - Extended type definitions
-- Create `app/components/ai/AIProcessingStatus.tsx` - Processing status component
+- Create `app/components/ai/ProcessingStatus.tsx` - Processing status indicator
+- Modify `app/components/ui/FileUpload.tsx` - Enhanced upload component
+- Create `app/lib/utils/ai-integration-utils.ts` - Integration utility functions
 
 ### Required Components
 
-- Seamless integration with existing upload component
-- AI processing trigger after successful upload
-- Progress display within existing UI framework
-- Results display with extracted field data
-- Error handling integrated with existing error system
-- Loading states and user feedback
-- Retry mechanisms for failed processing
+- AI processing trigger integration with file upload
+- Qwen2.5-VL-7B-Instruct processing status display
+- Extracted data visualization and editing interface
+- Error handling and retry mechanisms
+- Processing cancellation functionality
+- Results export and download options
+- Performance optimization for UI responsiveness
+- Accessibility features for AI processing interface
 
 ### Technical Considerations
 
-- Maintaining existing upload UI/UX patterns
+- Qwen2.5-VL-7B-Instruct processing time (~8 seconds) UI handling
 - State management for AI processing workflow
-- Error boundary integration for AI failures
-- Responsive design for AI processing components
-- Accessibility compliance for new AI features
-- Performance optimization for UI updates
-- Browser compatibility for AI integration
+- Error boundary implementation for AI failures
 - Memory management during processing
+- Progressive enhancement for AI features
+- Mobile responsiveness for AI interface
+- Keyboard navigation and accessibility
+- Performance optimization for large images
 
 ## Acceptance Criteria
 
-- Seamless integration with existing upload component achieved
-- AI processing triggers automatically after successful upload
-- Progress display integrated within existing UI framework
-- Results display shows extracted field data clearly
-- Error handling integrated with existing error system
-- Loading states provide appropriate user feedback
-- Retry functionality available for failed processing
-- UI maintains consistent design patterns and accessibility
+- File upload interface triggers Qwen2.5-VL processing seamlessly
+- Processing status clearly displayed during AI extraction
+- Extracted Romanian ID data presented in user-friendly format
+- Error handling provides clear feedback and retry options
+- Processing cancellation functionality available to users
+- Results can be edited, validated, and exported
+- Interface remains responsive during AI processing
+- Accessibility standards met for AI processing features
 
 ## Testing Approach
 
-- Integration testing with existing upload functionality
-- User experience testing for AI processing workflow
-- Error scenario testing with UI integration
-- Accessibility testing for new AI components
-- Performance testing for UI responsiveness
-- Cross-browser compatibility testing
+- Integration testing between upload and AI processing
+- User experience testing for processing workflow
+- Error scenario testing (AI failures, network issues)
+- Performance testing with various image sizes
+- Accessibility testing for AI interface components
 - Mobile responsiveness validation
-- User acceptance testing for workflow integration
+- Cross-browser compatibility testing
 
 ## Dependencies
 
-- Task 03-02: AI vision processing API endpoint must be functional
-- Task 03-05: Progress tracking system for UI integration
-- Story 02: File upload functionality must be operational
+- Task 03-02: AI vision API endpoint must be functional
+- Task 03-05: Progress tracking system for status display
+- Existing file upload interface from previous stories
 
 ## Estimated Completion Time
 

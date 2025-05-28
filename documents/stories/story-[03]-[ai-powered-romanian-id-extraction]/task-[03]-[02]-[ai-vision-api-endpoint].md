@@ -6,69 +6,72 @@ Story 03: AI-Powered Romanian ID Extraction
 
 ## Task Description
 
-Build Next.js API route for handling image processing with LLaMA 3.2 Vision. This endpoint will
-serve as the main interface between the frontend application and the local Ollama server, handling
-image uploads, processing requests, and returning structured data extracted from Romanian ID
-documents.
+Create a Next.js API endpoint that integrates with the local Ollama service running
+Qwen2.5-VL-7B-Instruct model to process Romanian ID images and return structured data extraction
+results. This task implements the core AI processing pipeline that converts uploaded images into
+structured Romanian ID data.
 
 ## Implementation Details
 
 ### Files to Modify
 
-- Create `app/api/ai-vision-ocr/route.ts` - Main API endpoint for AI vision processing
-- Create `app/lib/ai/vision-processor.ts` - Core vision processing logic
-- Create `app/lib/ai/ollama-integration.ts` - Ollama API integration utilities
-- Create `app/lib/types/ai-vision-types.ts` - TypeScript interfaces for AI processing
-- Create `app/lib/utils/image-validation.ts` - Image format and size validation
-- Create `app/lib/utils/response-formatter.ts` - Structured response formatting
+- Create `app/api/ai-vision-ocr/route.ts` - Next.js API route for AI processing
+- Create `app/lib/ai/qwen-vision-processor.ts` - Qwen2.5-VL integration wrapper
+- Create `app/lib/ai/image-handler.ts` - Image processing utilities
+- Create `app/lib/types/romanian-id-types.ts` - TypeScript interfaces for Romanian ID data
+- Create `app/lib/validation/image-validator.ts` - Image format and size validation
+- Create `app/lib/utils/response-formatter.ts` - API response formatting utilities
 
 ### Required Components
 
-- Next.js API route handler with POST method support
-- Image upload validation and processing
-- Ollama chat API integration for vision model
-- Error handling for API failures and timeouts
-- Request/response logging for debugging
-- Rate limiting for API protection
-- CORS configuration for frontend integration
+- API endpoint accepting multipart/form-data image uploads
+- Integration with Ollama Qwen2.5-VL-7B-Instruct model
+- Image preprocessing and optimization for AI input
+- Structured JSON response with extracted Romanian ID fields
+- Error handling for AI processing failures
+- Request validation and sanitization
+- Response time optimization (<8 seconds)
+- Memory management for large images
 
 ### Technical Considerations
 
-- Maximum image size limits (10MB recommended)
-- Supported image formats (JPG, PNG, WEBP)
-- Base64 encoding for Ollama vision model input
-- Timeout handling for long-running AI inference
-- Memory management for large image processing
-- Concurrent request handling and queuing
-- Error response standardization
-- Security headers and input sanitization
+- Qwen2.5-VL-7B-Instruct model API integration via Ollama
+- Image format support (JPG, PNG, HEIC, WebP)
+- Maximum file size limits (10MB recommended)
+- Memory usage optimization during processing
+- Concurrent request handling limitations
+- Error recovery and retry mechanisms
+- Response caching strategies
+- Security considerations for file uploads
+- GDPR compliance for local-only processing
 
 ## Acceptance Criteria
 
-- `/api/ai-vision-ocr` endpoint created and functional
-- Image upload and validation handling implemented
-- Integration with Ollama chat API for vision processing
-- Structured response format for extracted data
-- Error handling for API failures and model unavailability
-- Request timeout protection (30 seconds maximum)
-- Input validation for image format and size
-- Proper HTTP status codes for different scenarios
+- API endpoint `/api/ai-vision-ocr` accepts POST requests with image uploads
+- Integration with Qwen2.5-VL-7B-Instruct model via Ollama functional
+- Structured JSON response with all Romanian ID fields
+- Processing time consistently under 8 seconds
+- Error handling for invalid images and AI failures
+- Request validation prevents malicious uploads
+- Memory usage remains stable during processing
+- GDPR compliance with zero external network requests
 
 ## Testing Approach
 
-- Unit tests for API endpoint functionality
-- Integration tests with Ollama server
-- Image upload validation testing
-- Error scenario testing (invalid images, model failures)
-- Performance testing with various image sizes
-- Concurrent request handling validation
-- API response format verification
+- Unit testing for image validation and processing functions
+- Integration testing with Qwen2.5-VL model
+- Performance testing with various image sizes and formats
+- Error scenario testing (corrupted images, model failures)
+- Load testing for concurrent requests
+- Security testing for file upload vulnerabilities
+- Memory leak testing during extended operation
 
 ## Dependencies
 
-- Task 03-01: Ollama server and LLaMA 3.2 Vision model must be operational
-- Story 02: File upload infrastructure for image handling
+- Task 03-01: Ollama and Qwen2.5-VL-7B-Instruct model setup
+- Next.js API routes infrastructure
+- Ollama service running on localhost:11434
 
 ## Estimated Completion Time
 
-5 hours
+4 hours

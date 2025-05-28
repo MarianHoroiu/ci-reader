@@ -1,4 +1,4 @@
-# Task 03-05: Create AI Processing Progress Tracking
+# Task 03-05: Implement AI Processing Progress Tracking
 
 ## Parent Story
 
@@ -6,69 +6,69 @@ Story 03: AI-Powered Romanian ID Extraction
 
 ## Task Description
 
-Implement real-time progress tracking for AI processing stages. This task creates a comprehensive
-progress monitoring system that provides users with real-time feedback during the AI processing
-workflow, including stage descriptions, progress indicators, and error state management.
+Create a comprehensive progress tracking system for Qwen2.5-VL-7B-Instruct processing operations,
+providing real-time feedback to users during the AI extraction process. This task ensures users have
+clear visibility into processing status and estimated completion times for optimal user experience.
 
 ## Implementation Details
 
 ### Files to Modify
 
-- Create `app/lib/hooks/useAIProcessingProgress.ts` - React hook for progress tracking
-- Create `app/lib/ai/progress-tracker.ts` - Core progress tracking logic
-- Create `app/components/ui/AIProcessingProgress.tsx` - Progress display component
-- Create `app/lib/types/progress-types.ts` - TypeScript interfaces for progress states
-- Create `app/lib/utils/progress-calculator.ts` - Progress calculation utilities
-- Create `app/lib/websocket/progress-websocket.ts` - WebSocket implementation for real-time updates
+- Create `app/lib/progress/qwen-progress-tracker.ts` - Qwen2.5-VL specific progress tracking
+- Create `app/lib/progress/processing-stages.ts` - Processing stage definitions
+- Create `app/components/ui/ProgressIndicator.tsx` - Progress visualization component
+- Create `app/lib/hooks/useProcessingProgress.ts` - Progress tracking React hook
+- Create `app/lib/utils/time-estimator.ts` - Processing time estimation utilities
+- Create `app/lib/types/progress-types.ts` - TypeScript interfaces for progress tracking
 
 ### Required Components
 
-- Progress indicators for processing stages (upload, preprocessing, AI inference, validation)
-- WebSocket or polling mechanism for real-time updates
-- Processing stage descriptions for user feedback
-- Timeout handling and cancellation support
-- Error state management and recovery options
-- Progress percentage calculation
-- Estimated time remaining calculation
+- Real-time progress updates during Qwen2.5-VL processing
+- Processing stage indicators (image upload, preprocessing, AI analysis, data extraction)
+- Time estimation based on image size and complexity
+- Error state handling and user feedback
+- Progress persistence across page refreshes
+- Cancellation support for long-running operations
+- Performance metrics collection
+- User-friendly progress visualization
 
 ### Technical Considerations
 
-- Real-time communication between frontend and backend
-- WebSocket connection management and fallback to polling
-- Progress state persistence during page refresh
-- Cancellation token implementation for long-running operations
-- Error boundary integration for progress component
-- Accessibility considerations for progress indicators
-- Mobile-responsive progress display
-- Performance optimization for frequent updates
+- Qwen2.5-VL-7B-Instruct processing time characteristics (~8 seconds)
+- WebSocket or Server-Sent Events for real-time updates
+- Progress state management and persistence
+- Memory usage during progress tracking
+- Browser compatibility for real-time features
+- Error handling and recovery mechanisms
+- Performance impact of progress tracking
+- User experience optimization for perceived performance
 
 ## Acceptance Criteria
 
-- Progress indicators for all processing stages implemented
-- WebSocket or polling for real-time updates functional
-- Processing stage descriptions provide clear user feedback
-- Timeout handling and cancellation support operational
-- Error state management and recovery mechanisms working
-- Progress percentage accurately reflects processing status
-- Estimated time remaining calculation implemented
-- Cancellation functionality allows users to abort processing
+- Real-time progress tracking for Qwen2.5-VL processing operations
+- Clear stage indicators for each processing step
+- Accurate time estimation based on image characteristics
+- Error state handling with user-friendly messages
+- Progress persistence across browser sessions
+- Cancellation functionality for ongoing operations
+- Performance metrics collection for optimization
+- Responsive progress visualization across devices
 
 ## Testing Approach
 
-- Progress tracking accuracy testing across all stages
-- Real-time update functionality validation
-- WebSocket connection stability testing
-- Cancellation mechanism testing
-- Error state handling verification
-- Performance testing with concurrent progress tracking
-- Accessibility testing for progress indicators
-- Mobile responsiveness validation
+- Progress accuracy testing with various image types
+- Time estimation validation against actual processing times
+- Error scenario testing (network failures, model unavailability)
+- Performance testing for progress tracking overhead
+- User experience testing for progress visualization
+- Cross-browser compatibility testing
+- Mobile responsiveness testing
 
 ## Dependencies
 
-- Task 03-02: AI vision processing API endpoint for progress integration
+- Task 03-02: AI vision API endpoint for progress integration
 - Task 03-04: Image preprocessing pipeline for stage tracking
-- WebSocket infrastructure or polling mechanism
+- Real-time communication infrastructure (WebSocket/SSE)
 
 ## Estimated Completion Time
 

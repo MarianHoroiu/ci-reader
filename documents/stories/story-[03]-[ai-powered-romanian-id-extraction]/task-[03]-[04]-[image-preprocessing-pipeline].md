@@ -6,71 +6,71 @@ Story 03: AI-Powered Romanian ID Extraction
 
 ## Task Description
 
-Create image optimization pipeline for better AI processing results. This task implements a
-comprehensive image preprocessing system that enhances image quality, corrects orientation, and
-optimizes format for the LLaMA 3.2 Vision model to achieve maximum accuracy in Romanian ID field
-extraction.
+Implement an optimized image preprocessing pipeline specifically designed for Qwen2.5-VL-7B-Instruct
+model input, ensuring optimal image quality while maintaining processing speed and GDPR compliance
+through local-only processing. This task focuses on preparing images for maximum AI extraction
+accuracy.
 
 ## Implementation Details
 
 ### Files to Modify
 
-- Create `app/lib/image-processing/preprocessing-pipeline.ts` - Main preprocessing pipeline
-- Create `app/lib/image-processing/image-enhancer.ts` - Image quality enhancement utilities
-- Create `app/lib/image-processing/format-converter.ts` - Image format conversion logic
-- Create `app/lib/image-processing/orientation-corrector.ts` - Automatic orientation detection and
-  correction
-- Create `app/lib/image-processing/noise-reducer.ts` - Noise reduction and cleanup algorithms
-- Create `app/lib/image-processing/contrast-optimizer.ts` - Contrast and brightness optimization
-- Create `app/lib/utils/base64-encoder.ts` - Base64 encoding for AI model input
+- Create `app/lib/image-processing/qwen-preprocessor.ts` - Qwen2.5-VL optimized preprocessing
+- Create `app/lib/image-processing/image-optimizer.ts` - Image quality enhancement
+- Create `app/lib/image-processing/format-converter.ts` - Image format standardization
+- Create `app/lib/image-processing/rotation-detector.ts` - Automatic rotation correction
+- Create `app/lib/image-processing/quality-analyzer.ts` - Image quality assessment
+- Create `app/lib/utils/image-validation.ts` - Image validation utilities
 
 ### Required Components
 
-- Image format conversion and optimization (JPG, PNG, WEBP → optimized format)
-- Resolution and quality enhancement algorithms
-- Automatic orientation correction and cropping
-- Noise reduction and contrast enhancement
-- Base64 encoding for AI model input
-- Image validation and error handling
-- Performance optimization for large images
+- Image format detection and conversion (JPG, PNG, HEIC, WebP)
+- Automatic rotation correction for Romanian ID orientation
+- Image quality enhancement (contrast, sharpness, noise reduction)
+- Size optimization for Qwen2.5-VL input requirements
+- Quality assessment and validation
+- Memory-efficient processing pipeline
+- Error handling for corrupted images
+- Performance optimization for <2 second preprocessing
 
 ### Technical Considerations
 
-- Canvas API for client-side image processing
-- WebAssembly integration for performance-critical operations
-- Memory management for large image files
-- Progressive enhancement for different browser capabilities
-- Image quality vs. processing speed trade-offs
-- Batch processing support for multiple images
-- Error handling for corrupted or invalid images
-- Browser compatibility for image processing APIs
+- Qwen2.5-VL-7B-Instruct optimal input specifications
+- Image resolution optimization (balance quality vs processing speed)
+- Memory usage during preprocessing (efficient algorithms)
+- Romanian ID card layout and orientation detection
+- Color space optimization for document processing
+- Compression settings for AI model input
+- Browser compatibility for client-side processing
+- Security considerations for image handling
 
 ## Acceptance Criteria
 
-- Image format conversion and optimization implemented
-- Resolution and quality enhancement functional
-- Orientation correction and cropping working correctly
-- Noise reduction and contrast enhancement operational
-- Base64 encoding for AI model input implemented
-- Image validation with comprehensive error handling
-- Performance optimization for processing speed
+- Image preprocessing pipeline optimized for Qwen2.5-VL-7B-Instruct
+- Automatic rotation correction for Romanian ID cards
+- Image quality enhancement without over-processing
+- Support for common image formats (JPG, PNG, HEIC, WebP)
+- Processing time under 2 seconds for typical images
 - Memory usage optimization for large images
+- Quality validation and error handling
+- GDPR compliance with local-only processing
 
 ## Testing Approach
 
-- Image processing pipeline testing with various formats
-- Quality enhancement validation with before/after comparisons
-- Orientation correction testing with rotated images
-- Performance benchmarking with different image sizes
-- Memory usage monitoring during processing
-- Error handling testing with corrupted images
-- Browser compatibility testing across different platforms
+- Image quality improvement validation
+- Processing time benchmarking with various image sizes
+- Memory usage testing during preprocessing
+- Rotation correction accuracy testing
+- Format conversion reliability testing
+- Edge case testing (corrupted, extremely large images)
+- Performance testing on different hardware configurations
 
 ## Dependencies
 
-- Task 03-02: AI vision processing API endpoint for integration
-- Browser APIs for image processing capabilities
+- Task 03-03: Romanian ID extraction prompts for optimization guidance
+- Image processing libraries (Canvas API, Sharp, or similar)
+- Browser APIs for client-side processing
 
 ## Estimated Completion Time
 
-4 hours
+3 hours

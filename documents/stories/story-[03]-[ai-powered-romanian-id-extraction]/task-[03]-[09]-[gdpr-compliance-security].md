@@ -6,9 +6,10 @@ Story 03: AI-Powered Romanian ID Extraction
 
 ## Task Description
 
-Enforce maximum security and EU GDPR compliance with zero external data transmission. This critical
-task implements comprehensive privacy protection measures, ensuring complete local processing,
-network isolation verification, and full compliance with European data protection regulations.
+Enforce maximum security and EU GDPR compliance with zero external data transmission for
+Qwen2.5-VL-7B-Instruct processing. This critical task implements comprehensive privacy protection
+measures, ensuring complete local processing, network isolation verification, and full compliance
+with European data protection regulations.
 
 ## Implementation Details
 
@@ -36,11 +37,11 @@ network isolation verification, and full compliance with European data protectio
 
 ### Technical Considerations
 
-- Real-time network traffic monitoring and blocking
-- Cryptographic hash verification of processing pipeline
+- Real-time network traffic monitoring and blocking during Qwen2.5-VL processing
+- Cryptographic hash verification of Ollama processing pipeline
 - Zero persistent storage of personal data
 - Session-based data retention with automatic cleanup
-- Air-gapped processing environment enforcement
+- Air-gapped processing environment enforcement for local AI
 - Privacy impact assessment implementation
 - Data protection officer compliance requirements
 - Legal audit trail without PII storage

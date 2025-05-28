@@ -1,4 +1,4 @@
-# Task 03-01: Set Up Ollama Server and LLaMA 3.2 Vision Model
+# Task 03-01: Set Up Ollama Server and Qwen2.5-VL Model
 
 ## Parent Story
 
@@ -6,7 +6,7 @@ Story 03: AI-Powered Romanian ID Extraction
 
 ## Task Description
 
-Install and configure Ollama with LLaMA 3.2 Vision 11B model for local AI processing. This task
+Install and configure Ollama with Qwen2.5-VL-7B-Instruct model for local AI processing. This task
 establishes the foundation for AI-powered document processing by setting up the local inference
 server and downloading the required vision model. The setup ensures complete privacy compliance by
 keeping all AI processing local to the user's machine.
@@ -16,7 +16,7 @@ keeping all AI processing local to the user's machine.
 ### Files to Modify
 
 - Create `scripts/setup-ollama.sh` - Automated Ollama installation script
-- Create `scripts/install-llama-vision.sh` - LLaMA 3.2 Vision model download script
+- Create `scripts/install-qwen-vision.sh` - Qwen2.5-VL model download script
 - Create `docs/ollama-setup-guide.md` - Comprehensive setup documentation
 - Create `app/lib/ai/ollama-client.ts` - Ollama API client wrapper
 - Create `app/lib/ai/model-health-check.ts` - Model availability verification
@@ -25,7 +25,7 @@ keeping all AI processing local to the user's machine.
 ### Required Components
 
 - Ollama server installation (latest version)
-- LLaMA 3.2 Vision 11B model (Q4_K_M quantization)
+- Qwen2.5-VL-7B-Instruct model (optimized quantization)
 - Health check endpoint for model availability
 - Error handling for installation failures
 - System requirements validation
@@ -33,9 +33,9 @@ keeping all AI processing local to the user's machine.
 
 ### Technical Considerations
 
-- Minimum 8GB RAM requirement for LLaMA 3.2 Vision 11B
-- Disk space requirement: ~10GB for model storage
-- Network bandwidth for initial model download (~6GB)
+- Minimum 6GB RAM requirement for Qwen2.5-VL-7B-Instruct
+- Disk space requirement: ~12GB for model storage
+- Network bandwidth for initial model download (~8GB)
 - Platform compatibility (macOS, Linux, Windows)
 - GPU acceleration support (optional but recommended)
 - Model quantization options for different hardware configurations
@@ -45,7 +45,7 @@ keeping all AI processing local to the user's machine.
 ## Acceptance Criteria
 
 - Ollama installed and running on localhost:11434
-- LLaMA 3.2 Vision 11B model downloaded and available
+- Qwen2.5-VL-7B-Instruct model downloaded and available
 - Model health check endpoint functional
 - Documentation for team setup and troubleshooting
 - Automated setup scripts for different platforms

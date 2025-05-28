@@ -6,71 +6,71 @@ Story 03: AI-Powered Romanian ID Extraction
 
 ## Task Description
 
-Add validation and confidence metrics for AI-extracted data. This task implements comprehensive data
-validation rules specific to Romanian ID documents and creates a confidence scoring system that
-helps users identify and correct potentially inaccurate extractions.
+Develop comprehensive data validation and confidence scoring system for Qwen2.5-VL-7B-Instruct
+extracted Romanian ID data, ensuring accuracy and reliability of AI-generated results. This task
+implements validation rules specific to Romanian ID formats and provides confidence metrics for each
+extracted field.
 
 ## Implementation Details
 
 ### Files to Modify
 
-- Create `app/lib/validation/romanian-id-validator.ts` - Core validation logic
-- Create `app/lib/ai/confidence-scorer.ts` - Confidence scoring algorithms
-- Create `app/lib/validation/cnp-validator.ts` - CNP (Romanian personal code) validation
-- Create `app/lib/validation/date-validator.ts` - Date format and logic validation
-- Create `app/lib/validation/address-validator.ts` - Romanian address validation
-- Create `app/components/ui/ConfidenceIndicator.tsx` - Confidence display component
-- Create `app/components/ui/ValidationErrors.tsx` - Validation error display
+- Create `app/lib/validation/romanian-id-validator.ts` - Romanian ID field validation
+- Create `app/lib/ai/qwen-confidence-scorer.ts` - Qwen2.5-VL confidence analysis
+- Create `app/lib/validation/field-validators.ts` - Individual field validation logic
+- Create `app/lib/utils/confidence-calculator.ts` - Confidence score computation
+- Create `app/components/validation/ValidationResults.tsx` - Validation display component
+- Create `app/lib/types/validation-types.ts` - TypeScript interfaces for validation
 
 ### Required Components
 
-- Field-specific validation rules (CNP format, date validation, address structure)
+- Romanian CNP (Cod Numeric Personal) validation
+- Date format validation (birth date, issue date, expiry date)
+- Name validation with Romanian character support
+- Address validation for Romanian administrative divisions
+- Document series and number format validation
 - Confidence scoring for each extracted field
-- Data quality indicators in UI
-- Manual correction interface for low-confidence fields
-- Validation error handling and user feedback
-- Real-time validation during data entry
-- Batch validation for all extracted fields
+- Overall extraction confidence assessment
+- Validation error reporting and suggestions
 
 ### Technical Considerations
 
+- Qwen2.5-VL-7B-Instruct output confidence analysis
+- Romanian ID format specifications and rules
 - CNP algorithm validation (checksum calculation)
 - Romanian administrative division validation
-- Date logic validation (birth date vs. issue date)
-- Name format validation (Romanian naming conventions)
-- Document series and number format validation
+- Date format consistency checking
+- Name format validation with diacritics
 - Confidence threshold configuration
-- Performance optimization for real-time validation
-- Internationalization for validation messages
+- Performance optimization for validation algorithms
 
 ## Acceptance Criteria
 
-- Field-specific validation rules implemented for all ID fields
-- Confidence scoring functional for each extracted field
-- Data quality indicators displayed in UI
-- Manual correction interface available for low-confidence fields
-- Validation error handling provides clear user feedback
-- CNP validation includes proper checksum verification
-- Date validation ensures logical consistency
-- Address validation supports Romanian administrative structure
+- Romanian CNP validation with checksum verification
+- Date format validation for all date fields
+- Name validation supporting Romanian characters (ă, â, î, ș, ț)
+- Address validation against Romanian administrative divisions
+- Document format validation for series and numbers
+- Confidence scoring implemented for each field
+- Overall extraction confidence calculated
+- Validation results clearly displayed to users
 
 ## Testing Approach
 
-- Validation rule testing with valid and invalid data
-- Confidence scoring accuracy testing
-- CNP validation testing with various scenarios
-- Date validation testing for edge cases
-- Address validation testing with Romanian locations
-- User interface testing for validation feedback
-- Performance testing for real-time validation
-- Error message clarity and internationalization testing
+- CNP validation testing with valid and invalid codes
+- Date format validation with various input formats
+- Name validation with Romanian character combinations
+- Address validation against known Romanian locations
+- Confidence scoring accuracy validation
+- Edge case testing for malformed data
+- Performance testing for validation algorithms
 
 ## Dependencies
 
 - Task 03-03: Romanian ID extraction prompts for field definitions
 - Task 03-06: UI integration for validation display
-- Romanian administrative data for address validation
+- Romanian ID format specifications and validation rules
 
 ## Estimated Completion Time
 
-3 hours
+4 hours
