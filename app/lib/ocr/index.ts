@@ -8,6 +8,18 @@ export { ocrEngine, OCREngine } from './ocr-engine';
 export { tesseractConfig, TesseractConfigManager } from './tesseract-config';
 export { languagePackManager, LanguagePackManager } from './language-packs';
 
+// Worker functionality
+export {
+  ocrWorkerManager,
+  OCRWorkerManager,
+} from '../workers/ocr-worker-manager';
+export * from '../workers/worker-types';
+export * from '../workers/worker-utils';
+export * from '../workers/worker-error-handler';
+
+// React hooks
+export * from '../hooks/useOCRWorker';
+
 // Text processing utilities
 export {
   cleanOCRText,
@@ -30,6 +42,7 @@ import {
 } from './text-processing';
 import type {
   OCRResult,
+  OCRProgress,
   OCRProcessingOptions,
   OCREngineStatus,
 } from './ocr-types';
@@ -111,10 +124,36 @@ export async function initializeOCR(): Promise<void> {
 }
 
 /**
- * Process Romanian ID document with OCR
+ * Process Romanian ID document with OCR using workers when available
  * Simplified API for common use cases
  */
 export async function processRomanianID(
+  imageInput: string | File | ImageData | HTMLCanvasElement,
+  options: Partial<OCRProcessingOptions> = {},
+  onProgress?: (_progress: OCRProgress) => void
+): Promise<OCRResult> {
+  const defaultOptions: OCRProcessingOptions = {
+    language: 'ron',
+    preprocessImage: true,
+    enhanceContrast: true,
+    removeNoise: true,
+    convertToGrayscale: true,
+    confidenceThreshold: 0.7,
+    ...options,
+  };
+
+  return ocrEngine.processImageWithWorkers(
+    imageInput,
+    defaultOptions,
+    onProgress
+  );
+}
+
+/**
+ * Process Romanian ID document with OCR (main thread only)
+ * For cases where worker processing is not desired
+ */
+export async function processRomanianIDMainThread(
   imageInput: string | File | ImageData | HTMLCanvasElement,
   options: Partial<OCRProcessingOptions> = {}
 ): Promise<OCRResult> {

@@ -18,6 +18,8 @@ import {
   correctRomanianText,
   isValidRomanianText,
 } from '../constants/romanian-characters';
+import { ocrWorkerManager } from '../workers/ocr-worker-manager';
+import { checkWorkerCompatibility } from '../workers/worker-utils';
 
 // Dynamic import for Tesseract.js to avoid SSR issues
 let TesseractModule: typeof import('tesseract.js') | null = null;
@@ -182,7 +184,34 @@ export class OCREngine {
   }
 
   /**
-   * Process image with OCR
+   * Process image with OCR using workers when available
+   */
+  async processImageWithWorkers(
+    imageInput: string | File | ImageData | HTMLCanvasElement,
+    options: OCRProcessingOptions = { language: DEFAULT_LANGUAGE_PACK },
+    onProgress?: (_progress: OCRProgress) => void
+  ): Promise<OCRResult> {
+    const compatibility = checkWorkerCompatibility();
+
+    if (compatibility.isSupported) {
+      // Use worker-based processing
+      return new Promise((resolve, reject) => {
+        ocrWorkerManager.processImage(
+          imageInput,
+          options,
+          onProgress,
+          result => resolve(result),
+          error => reject(error)
+        );
+      });
+    } else {
+      // Fallback to main thread processing
+      return this.processImage(imageInput, options);
+    }
+  }
+
+  /**
+   * Process image with OCR (main thread)
    */
   async processImage(
     imageInput: string | File | ImageData | HTMLCanvasElement,
