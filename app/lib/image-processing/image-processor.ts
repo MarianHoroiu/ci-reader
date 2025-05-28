@@ -9,9 +9,6 @@ import type {
   ProcessingPipelineConfig,
   ImageQualityMetrics,
   RotationDetectionResult,
-  ImageValidationResult,
-  PerformanceMetrics,
-  ProcessingMetadata,
   QwenOptimalSpecs,
   RomanianIDLayoutSpecs,
 } from '@/lib/types/image-processing-types';
