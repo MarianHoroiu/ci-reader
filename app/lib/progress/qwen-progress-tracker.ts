@@ -1,41 +1,134 @@
 /**
- * Qwen2.5-VL Progress Tracker
- * Manages processing sessions and real-time progress updates
+ * LLaVA Progress Tracker
+ * Specialized progress tracking for LLaVA processing operations
  */
 
-import type {
-  ProcessingStage,
-  ProcessingProgress,
+import {
   ProcessingSession,
+  ProcessingStage,
+  ProgressTrackerOptions,
+  ProcessingProgress,
   ProcessingError,
   ProcessingMetrics,
-  ProgressTrackerOptions,
-  CancellationToken,
 } from '@/lib/types/progress-types';
-
-import {
-  calculateOverallProgress,
-  isStageCancellable,
-  isValidStageTransition,
-  QWEN_PROCESSING_CONFIG,
-} from '@/lib/progress/processing-stages';
 
 import {
   calculateTimeEstimation,
   updateTimeEstimation,
-  calculateRemainingTime,
-  calculateProcessingSpeed,
-  calculateEfficiency,
   isProcessingDelayed,
 } from '@/lib/utils/time-estimator';
 
 /**
- * Progress tracker for Qwen2.5-VL processing operations
+ * Validate stage transition
  */
-export class QwenProgressTracker {
+function isValidStageTransition(
+  currentStage: ProcessingStage,
+  newStage: ProcessingStage
+): boolean {
+  // Allow staying in the same state
+  if (currentStage === newStage) {
+    return true;
+  }
+
+  const validTransitions: Record<ProcessingStage, ProcessingStage[]> = {
+    idle: ['uploading', 'preprocessing', 'cancelled'],
+    uploading: ['preprocessing', 'error', 'cancelled'],
+    preprocessing: ['ai-analysis', 'error', 'cancelled'],
+    'ai-analysis': ['data-extraction', 'error', 'cancelled'],
+    'data-extraction': ['validation', 'error', 'cancelled'],
+    validation: ['completed', 'error', 'cancelled'],
+    completed: [],
+    error: ['preprocessing', 'cancelled'], // Allow retry
+    cancelled: [],
+  };
+
+  return validTransitions[currentStage]?.includes(newStage) ?? false;
+}
+
+/**
+ * Calculate overall progress based on stage and stage progress
+ */
+function calculateOverallProgress(
+  stage: ProcessingStage,
+  stageProgress: number
+): number {
+  const stageWeights: Record<ProcessingStage, number> = {
+    idle: 0,
+    uploading: 10,
+    preprocessing: 25,
+    'ai-analysis': 60,
+    'data-extraction': 85,
+    validation: 95,
+    completed: 100,
+    error: 0,
+    cancelled: 0,
+  };
+
+  const baseProgress = stageWeights[stage] || 0;
+  const nextStageWeight =
+    Object.values(stageWeights).find(w => w > baseProgress) || 100;
+  const stageRange = nextStageWeight - baseProgress;
+
+  return baseProgress + (stageRange * stageProgress) / 100;
+}
+
+/**
+ * Calculate remaining time based on current progress
+ */
+function calculateRemainingTime(
+  timeEstimation: any,
+  elapsedTime: number,
+  overallProgress: number
+): number {
+  if (overallProgress <= 0) return timeEstimation.estimatedTime;
+  if (overallProgress >= 100) return 0;
+
+  const progressRatio = overallProgress / 100;
+  const estimatedTotalTime = elapsedTime / progressRatio;
+  return Math.max(0, estimatedTotalTime - elapsedTime);
+}
+
+/**
+ * Check if stage is cancellable
+ */
+function isStageCancellable(stage: ProcessingStage): boolean {
+  const cancellableStages: ProcessingStage[] = [
+    'idle',
+    'uploading',
+    'preprocessing',
+    'ai-analysis',
+  ];
+  return cancellableStages.includes(stage);
+}
+
+/**
+ * Calculate processing speed
+ */
+function calculateProcessingSpeed(
+  completedStages: ProcessingStage[],
+  elapsedTime: number
+): number {
+  if (elapsedTime <= 0) return 0;
+  return (completedStages.length / elapsedTime) * 1000; // stages per second
+}
+
+/**
+ * Calculate efficiency score
+ */
+function calculateEfficiency(
+  actualTime: number,
+  estimatedTime: number
+): number {
+  if (estimatedTime <= 0) return 1;
+  return Math.min(1, estimatedTime / actualTime);
+}
+
+/**
+ * Progress tracker for LLaVA processing operations
+ */
+export class LLaVAProgressTracker {
   private sessions = new Map<string, ProcessingSession>();
   private updateIntervals = new Map<string, number>();
-  private cancellationTokens = new Map<string, CancellationToken>();
   private options: Required<ProgressTrackerOptions>;
 
   constructor(options: ProgressTrackerOptions = {}) {
@@ -44,9 +137,7 @@ export class QwenProgressTracker {
       collectMetrics: options.collectMetrics ?? true,
       persistProgress: options.persistProgress ?? true,
       maxRetries: options.maxRetries ?? 3,
-      timeout:
-        options.timeout ??
-        QWEN_PROCESSING_CONFIG.performanceThresholds.maxProcessingTime,
+      timeout: options.timeout ?? 30000, // 30 seconds
       callbacks: options.callbacks ?? {},
     };
   }
@@ -113,10 +204,6 @@ export class QwenProgressTracker {
 
     this.sessions.set(sessionId, session);
 
-    // Create cancellation token
-    const cancellationToken = this.createCancellationToken(sessionId);
-    this.cancellationTokens.set(sessionId, cancellationToken);
-
     // Start progress updates
     this.startProgressUpdates(sessionId);
 
@@ -153,17 +240,56 @@ export class QwenProgressTracker {
 
     const currentStage = session.progress.currentStage;
 
+    // Special case for error stage to prevent recursion
+    if (newStage === 'error') {
+      // Directly set to error state without validation
+      this._applyStageChange(sessionId, session, newStage, stageProgress);
+      return;
+    }
+
     // Validate stage transition
     if (!isValidStageTransition(currentStage, newStage)) {
-      this.handleError(sessionId, {
+      // Don't call handleError as it can lead to circular dependency
+      // Instead, log the error and mark the session as failed
+      console.error(
+        `Invalid stage transition from ${currentStage} to ${newStage}`
+      );
+
+      const processingError: ProcessingError = {
         code: 'INVALID_STAGE_TRANSITION',
         message: `Invalid stage transition from ${currentStage} to ${newStage}`,
         recoverable: false,
         timestamp: Date.now(),
-      });
+        stage: currentStage,
+      };
+
+      session.errors.push(processingError);
+      session.metrics.errorCount++;
+
+      // Directly set to error state
+      this._applyStageChange(sessionId, session, 'error', 0);
+
+      // Trigger error callback
+      this.options.callbacks.onError?.(processingError);
+
       return;
     }
 
+    // Apply the stage change
+    this._applyStageChange(sessionId, session, newStage, stageProgress);
+  }
+
+  /**
+   * Private helper method to apply stage changes
+   * Extracted to avoid code duplication and enable direct error state transitions
+   */
+  private _applyStageChange(
+    sessionId: string,
+    session: ProcessingSession,
+    newStage: ProcessingStage,
+    stageProgress: number
+  ): void {
+    const currentStage = session.progress.currentStage;
     const now = Date.now();
     const elapsedTime = now - session.startTime;
 
@@ -235,7 +361,14 @@ export class QwenProgressTracker {
       return;
     }
 
+    // Skip update if progress is essentially the same (within 1%)
+    const currentProgress = session.progress.stageProgress;
     const clampedProgress = Math.max(0, Math.min(100, progress));
+
+    if (Math.abs(currentProgress - clampedProgress) < 1) {
+      return; // Skip trivial updates
+    }
+
     this.updateStage(sessionId, session.progress.currentStage, clampedProgress);
   }
 
@@ -272,8 +405,11 @@ export class QwenProgressTracker {
       return;
     }
 
-    // Non-recoverable error or max retries exceeded
-    this.updateStage(sessionId, 'error');
+    // Non-recoverable error or max retries exceeded - use direct stage transition
+    // to avoid potential circular dependency
+    if (session.progress.currentStage !== 'error') {
+      this._applyStageChange(sessionId, session, 'error', 0);
+    }
   }
 
   /**
@@ -287,22 +423,29 @@ export class QwenProgressTracker {
 
     // Check if current stage is cancellable
     if (!session.progress.cancellable) {
-      this.handleError(sessionId, {
+      // Log error but don't call handleError to avoid potential circular dependency
+      console.error(
+        `Cannot cancel during ${session.progress.currentStage} stage`
+      );
+
+      const processingError: ProcessingError = {
         code: 'CANCELLATION_NOT_ALLOWED',
         message: `Cannot cancel during ${session.progress.currentStage} stage`,
         recoverable: false,
         timestamp: Date.now(),
-      });
+        stage: session.progress.currentStage,
+      };
+
+      session.errors.push(processingError);
+      session.metrics.errorCount++;
+
+      // Trigger error callback
+      this.options.callbacks.onError?.(processingError);
+
       return;
     }
 
-    // Trigger cancellation token
-    const cancellationToken = this.cancellationTokens.get(sessionId);
-    if (cancellationToken) {
-      cancellationToken.cancel();
-    }
-
-    this.updateStage(sessionId, 'cancelled');
+    this._applyStageChange(sessionId, session, 'cancelled', 0);
   }
 
   /**
@@ -328,7 +471,6 @@ export class QwenProgressTracker {
     if (sessionId) {
       this.stopProgressUpdates(sessionId);
       this.sessions.delete(sessionId);
-      this.cancellationTokens.delete(sessionId);
     } else {
       // Clean up all completed sessions
       for (const [id, session] of this.sessions.entries()) {
@@ -337,15 +479,6 @@ export class QwenProgressTracker {
         }
       }
     }
-  }
-
-  /**
-   * Get cancellation token for session
-   */
-  public getCancellationToken(
-    sessionId: string
-  ): CancellationToken | undefined {
-    return this.cancellationTokens.get(sessionId);
   }
 
   /**
@@ -428,33 +561,6 @@ export class QwenProgressTracker {
   }
 
   /**
-   * Private: Create cancellation token
-   */
-  private createCancellationToken(_sessionId: string): CancellationToken {
-    let isCancelled = false;
-    const callbacks: (() => void)[] = [];
-
-    return {
-      get isCancelled() {
-        return isCancelled;
-      },
-      cancel() {
-        if (!isCancelled) {
-          isCancelled = true;
-          callbacks.forEach(callback => callback());
-        }
-      },
-      onCancelled(callback: () => void) {
-        if (isCancelled) {
-          callback();
-        } else {
-          callbacks.push(callback);
-        }
-      },
-    };
-  }
-
-  /**
    * Private: Persist session to storage
    */
   private async persistSession(sessionId: string): Promise<void> {
@@ -465,7 +571,7 @@ export class QwenProgressTracker {
 
     try {
       // Use sessionStorage for temporary persistence
-      const key = `qwen-progress-${sessionId}`;
+      const key = `llava-progress-${sessionId}`;
       sessionStorage.setItem(key, JSON.stringify(session));
     } catch (error) {
       console.warn('Failed to persist progress session:', error);
@@ -479,7 +585,7 @@ export class QwenProgressTracker {
     sessionId: string
   ): Promise<ProcessingSession | null> {
     try {
-      const key = `qwen-progress-${sessionId}`;
+      const key = `llava-progress-${sessionId}`;
       const data = sessionStorage.getItem(key);
       if (data) {
         const session = JSON.parse(data) as ProcessingSession;
@@ -497,10 +603,35 @@ export class QwenProgressTracker {
    */
   public async clearSession(sessionId: string): Promise<void> {
     try {
-      const key = `qwen-progress-${sessionId}`;
+      const key = `llava-progress-${sessionId}`;
       sessionStorage.removeItem(key);
     } catch (error) {
       console.warn('Failed to clear progress session:', error);
+    }
+  }
+
+  protected getStorageKey(sessionId: string): string {
+    const key = `llava-progress-${sessionId}`;
+    return key;
+  }
+
+  protected saveToStorage(sessionId: string, data: any): void {
+    const key = `llava-progress-${sessionId}`;
+    try {
+      localStorage.setItem(key, JSON.stringify(data));
+    } catch (error) {
+      console.warn('Failed to save progress to localStorage:', error);
+    }
+  }
+
+  protected loadFromStorage(sessionId: string): any {
+    const key = `llava-progress-${sessionId}`;
+    try {
+      const data = localStorage.getItem(key);
+      return data ? JSON.parse(data) : null;
+    } catch (error) {
+      console.warn('Failed to load progress from localStorage:', error);
+      return null;
     }
   }
 }

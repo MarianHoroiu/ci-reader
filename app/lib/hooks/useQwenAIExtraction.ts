@@ -1,21 +1,19 @@
 /**
- * Qwen AI Extraction Hook
- * React hook for integrating Qwen2.5-VL AI processing with the upload interface
+ * AI Extraction Hook
+ * React hook for integrating AI processing with the upload interface
  */
 
 import { useState, useCallback, useRef } from 'react';
 import { useProcessingProgress } from '@/lib/hooks/useProcessingProgress';
+import type { ProcessingStage } from '@/lib/types/progress-types';
+import { isValidErrorCode } from '@/lib/types/romanian-id-types';
 import type {
   RomanianIDExtractionResult,
   AIVisionOCRResponse,
   AIVisionErrorCode,
 } from '@/lib/types/romanian-id-types';
-import {
-  createAIProcessingFormData,
-  processAIResponse,
-} from '@/lib/utils/ai-integration-utils';
 
-export interface QwenAIExtractionOptions {
+export interface AIExtractionOptions {
   /** Temperature for AI model (0-1) */
   temperature?: number;
   /** Maximum tokens for response */
@@ -32,7 +30,7 @@ export interface QwenAIExtractionOptions {
   onProgress?: (_progress: number) => void;
 }
 
-export interface QwenAIExtractionState {
+export interface AIExtractionState {
   /** Whether AI processing is currently running */
   isProcessing: boolean;
   /** Current processing progress (0-100) */
@@ -47,11 +45,11 @@ export interface QwenAIExtractionState {
   isCompleted: boolean;
 }
 
-export interface QwenAIExtractionActions {
+export interface AIExtractionActions {
   /** Start AI extraction for a file */
   startExtraction: (
     _file: File,
-    _options?: QwenAIExtractionOptions
+    _options?: AIExtractionOptions
   ) => Promise<void>;
   /** Cancel ongoing extraction */
   cancelExtraction: () => void;
@@ -62,10 +60,81 @@ export interface QwenAIExtractionActions {
 }
 
 /**
- * Hook for Qwen AI extraction with progress tracking
+ * Helper function to create form data for API request
  */
-export function useQwenAIExtraction(): QwenAIExtractionState &
-  QwenAIExtractionActions {
+function createAPIFormData(
+  file: File,
+  options: AIExtractionOptions = {}
+): FormData {
+  const formData = new FormData();
+  formData.append('image', file);
+
+  if (options.temperature !== undefined) {
+    formData.append('temperature', options.temperature.toString());
+  }
+
+  if (options.max_tokens !== undefined) {
+    formData.append('max_tokens', options.max_tokens.toString());
+  }
+
+  if (options.enhance_image !== undefined) {
+    formData.append('enhance_image', options.enhance_image.toString());
+  }
+
+  if (options.custom_prompt !== undefined) {
+    formData.append('custom_prompt', options.custom_prompt);
+  }
+
+  return formData;
+}
+
+/**
+ * Get API base URL with protocol
+ */
+function getAPIBaseURL(): string {
+  const isSecure = window.location.protocol === 'https:';
+  return `${isSecure ? 'https' : 'http'}://${window.location.host}`;
+}
+
+/**
+ * Process API response to extract result or error
+ */
+function processAPIResponse(response: AIVisionOCRResponse): {
+  success: boolean;
+  data?: RomanianIDExtractionResult;
+  error?: {
+    code: AIVisionErrorCode;
+    message: string;
+  };
+} {
+  if (response.success && response.data) {
+    return {
+      success: true,
+      data: response.data,
+    };
+  }
+
+  // Make sure the error code is a valid AIVisionErrorCode
+  const errorCode = response.error?.code
+    ? isValidErrorCode(response.error.code)
+      ? response.error.code
+      : ('INTERNAL_ERROR' as AIVisionErrorCode)
+    : ('INTERNAL_ERROR' as AIVisionErrorCode);
+
+  return {
+    success: false,
+    error: {
+      code: errorCode,
+      message:
+        response.error?.message || 'Unknown error occurred during processing',
+    },
+  };
+}
+
+/**
+ * Hook for AI extraction with progress tracking
+ */
+export function useAIExtraction(): AIExtractionState & AIExtractionActions {
   // State
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState<RomanianIDExtractionResult | null>(null);
@@ -78,7 +147,7 @@ export function useQwenAIExtraction(): QwenAIExtractionState &
 
   // Refs for retry functionality
   const lastFileRef = useRef<File | null>(null);
-  const lastOptionsRef = useRef<QwenAIExtractionOptions | undefined>(undefined);
+  const lastOptionsRef = useRef<AIExtractionOptions | undefined>(undefined);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   // Progress tracking
@@ -89,6 +158,7 @@ export function useQwenAIExtraction(): QwenAIExtractionState &
     updateProgress,
     cancelProcessing,
   } = useProcessingProgress({
+    autoStart: false,
     onComplete: () => {
       setIsCompleted(true);
       setIsProcessing(false);
@@ -106,10 +176,7 @@ export function useQwenAIExtraction(): QwenAIExtractionState &
    * Start AI extraction process
    */
   const startExtraction = useCallback(
-    async (
-      file: File,
-      options: QwenAIExtractionOptions = {}
-    ): Promise<void> => {
+    async (file: File, options: AIExtractionOptions = {}): Promise<void> => {
       // Reset state
       setIsProcessing(true);
       setResult(null);
@@ -126,66 +193,61 @@ export function useQwenAIExtraction(): QwenAIExtractionState &
 
       try {
         // Start progress tracking
-        const sessionId = `qwen-extraction-${Date.now()}`;
-        const imageMetadata = {
+        const sessionId = `ai-extraction-${Date.now()}`;
+        startProcessing(sessionId, {
           size: file.size,
-          width: 1024, // Default assumption
+          width: 1024, // Default values
           height: 768,
           format: file.type.split('/')[1] || 'jpeg',
           complexity: 1.0,
-        };
+        });
 
-        startProcessing(sessionId, imageMetadata);
-
-        // Stage 1: Uploading
-        updateStage('uploading', 0);
+        // Stage 1: File preparation
+        updateStage('uploading' as ProcessingStage, 0);
         options.onProgress?.(10);
 
         // Create form data
-        const formData = createAIProcessingFormData(file, {
-          ...(options.temperature !== undefined && {
-            temperature: options.temperature,
-          }),
-          ...(options.max_tokens !== undefined && {
-            max_tokens: options.max_tokens,
-          }),
-          ...(options.enhance_image !== undefined && {
-            enhance_image: options.enhance_image,
-          }),
-          ...(options.custom_prompt !== undefined && {
-            custom_prompt: options.custom_prompt,
-          }),
-        });
-
+        const formData = createAPIFormData(file, options);
         updateProgress(100);
-        updateStage('preprocessing', 0);
         options.onProgress?.(20);
 
-        // Stage 2: Preprocessing
-        await new Promise(resolve => setTimeout(resolve, 500)); // Simulate preprocessing
-        updateProgress(100);
-        updateStage('ai-analysis', 0);
-        options.onProgress?.(30);
+        // Stage 2: AI processing
+        updateStage('ai-analysis' as ProcessingStage, 0);
 
-        // Stage 3: AI Analysis - Call the API
-        const response = await fetch('/api/ai-vision-ocr', {
+        // Update progress during AI processing
+        let progressCounter = 0;
+        const progressInterval = setInterval(() => {
+          progressCounter += 5;
+          if (progressCounter <= 90) {
+            updateProgress(progressCounter);
+            options.onProgress?.(20 + progressCounter * 0.7);
+          }
+        }, 500);
+
+        // Make API call
+        const apiBaseURL = getAPIBaseURL();
+        const response = await fetch(`${apiBaseURL}/api/ai-vision-ocr`, {
           method: 'POST',
           body: formData,
           signal: abortControllerRef.current.signal,
         });
 
+        clearInterval(progressInterval);
+        updateProgress(100);
+        options.onProgress?.(90);
+
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          const errorText = await response.text();
+          throw new Error(`API error: ${response.status} - ${errorText}`);
         }
 
         const apiResponse: AIVisionOCRResponse = await response.json();
 
-        updateProgress(100);
-        updateStage('data-extraction', 0);
-        options.onProgress?.(80);
+        // Stage 3: Finalizing
+        updateStage('data-extraction' as ProcessingStage, 0);
 
-        // Stage 4: Data Extraction - Process response
-        const processedResponse = processAIResponse(apiResponse);
+        // Process the response
+        const processedResponse = processAPIResponse(apiResponse);
 
         if (!processedResponse.success || !processedResponse.data) {
           const errorInfo = processedResponse.error || {
@@ -195,42 +257,44 @@ export function useQwenAIExtraction(): QwenAIExtractionState &
 
           setError(errorInfo);
           options.onError?.(errorInfo);
+          updateProgress(100);
           return;
         }
 
+        // Success
         updateProgress(100);
-        updateStage('validation', 0);
-        options.onProgress?.(90);
-
-        // Stage 5: Validation
-        await new Promise(resolve => setTimeout(resolve, 200)); // Simulate validation
-        updateProgress(100);
-        updateStage('completed', 100);
         options.onProgress?.(100);
 
-        // Success
+        // Final stage: Completed
+        updateStage('completed' as ProcessingStage, 100);
+
         setResult(processedResponse.data);
         setIsCompleted(true);
         options.onSuccess?.(processedResponse.data);
-      } catch (err) {
-        if (abortControllerRef.current?.signal.aborted) {
+      } catch (error) {
+        console.error('AI extraction error:', error);
+
+        // Handle cancellation
+        if (error instanceof Error && error.name === 'AbortError') {
           setIsCancelled(true);
+          setIsProcessing(false);
           return;
         }
 
-        console.error('AI extraction failed:', err);
-
-        const errorInfo = {
+        // Handle other errors
+        setError({
           code: 'INTERNAL_ERROR' as AIVisionErrorCode,
           message:
-            err instanceof Error ? err.message : 'Unknown error occurred',
-        };
+            error instanceof Error ? error.message : 'Unknown error occurred',
+        });
 
-        setError(errorInfo);
-        options.onError?.(errorInfo);
-      } finally {
+        options.onError?.({
+          code: 'INTERNAL_ERROR' as AIVisionErrorCode,
+          message:
+            error instanceof Error ? error.message : 'Unknown error occurred',
+        });
+
         setIsProcessing(false);
-        abortControllerRef.current = null;
       }
     },
     [startProcessing, updateStage, updateProgress]
@@ -269,6 +333,7 @@ export function useQwenAIExtraction(): QwenAIExtractionState &
       throw new Error('No previous extraction to retry');
     }
 
+    // Call startExtraction with stored parameters
     await startExtraction(lastFileRef.current, lastOptionsRef.current);
   }, [startExtraction]);
 

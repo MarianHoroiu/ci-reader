@@ -3,16 +3,81 @@
 import React, { useState, useCallback } from 'react';
 import Image from 'next/image';
 import { Upload, X, FileImage, AlertTriangle, CheckCircle } from 'lucide-react';
-import { useQwenAIExtraction } from '@/lib/hooks/useQwenAIExtraction';
-import ProcessingStatus from '@/components/ai/ProcessingStatus';
-import AIExtractionResults from '@/components/ai/AIExtractionResults';
+import { useAIExtraction } from '@/lib/hooks/useAIExtraction';
 import type { RomanianIDFields } from '@/lib/types/romanian-id-types';
+import AIExtractionResults from '@/components/ai/AIExtractionResults';
 
 interface UploadedFile {
   file: File;
   preview: string;
   id: string;
 }
+
+/**
+ * Error component that displays the specific error with a more user-friendly message
+ */
+const ErrorDisplay = ({
+  error,
+  onRetry,
+  onReset,
+}: {
+  error: { code: string; message: string } | null;
+  onRetry: () => void;
+  onReset: () => void;
+}) => {
+  if (!error) return null;
+
+  // Extract keywords to provide a more user-friendly message
+  const isTemplateError =
+    error.message.includes('template') ||
+    error.message.includes('instructions instead of') ||
+    error.message.includes('EXTRACTED');
+
+  return (
+    <div className="mb-8 bg-red-50 rounded-lg border border-red-200 p-6">
+      <div className="flex items-start">
+        <AlertTriangle className="w-6 h-6 text-red-600 mr-3 mt-0.5 flex-shrink-0" />
+        <div>
+          <h3 className="text-lg font-medium text-red-800 mb-2">
+            Eroare de procesare
+          </h3>
+
+          {isTemplateError ? (
+            <>
+              <p className="text-red-700 mb-4">
+                Modelul nu a putut extrage date reale din document. Vă rugăm să:
+              </p>
+              <ul className="list-disc pl-5 mb-4 text-red-700">
+                <li>
+                  Verificați dacă imaginea conține un buletin românesc valid
+                </li>
+                <li>Încercați o imagine mai clară sau mai bine iluminată</li>
+                <li>Asigurați-vă că toate datele sunt vizibile în imagine</li>
+              </ul>
+            </>
+          ) : (
+            <p className="text-red-700 mb-4">{error.message}</p>
+          )}
+
+          <div className="flex space-x-3">
+            <button
+              onClick={onRetry}
+              className="px-4 py-2 bg-white text-red-700 font-medium rounded-lg border border-red-300 hover:bg-red-50 transition-colors"
+            >
+              Încearcă din nou
+            </button>
+            <button
+              onClick={onReset}
+              className="px-4 py-2 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              Anulează
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default function FileUploadPage() {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
@@ -24,13 +89,11 @@ export default function FileUploadPage() {
     isProcessing,
     result,
     error,
-    isCancelled,
-    isCompleted,
     startExtraction,
     cancelExtraction,
     resetExtraction,
     retryExtraction,
-  } = useQwenAIExtraction();
+  } = useAIExtraction();
 
   /**
    * Handle file selection
@@ -121,12 +184,13 @@ export default function FileUploadPage() {
    */
   const processFile = useCallback(
     async (uploadedFile: UploadedFile) => {
+      // Set current file
       setCurrentFile(uploadedFile);
 
       try {
         await startExtraction(uploadedFile.file, {
           enhance_image: true,
-          temperature: 0.1,
+          temperature: 0.0,
           max_tokens: 2000,
           onSuccess: extractionResult => {
             console.log('Extraction successful:', extractionResult);
@@ -238,6 +302,8 @@ export default function FileUploadPage() {
 
                   <div className="mb-3">
                     <Image
+                      width={100}
+                      height={100}
                       src={uploadedFile.preview}
                       alt={uploadedFile.file.name}
                       className="w-full h-32 object-cover rounded-lg"
@@ -267,18 +333,36 @@ export default function FileUploadPage() {
         )}
 
         {/* Processing Status */}
-        <ProcessingStatus
-          isProcessing={isProcessing}
-          error={error}
-          isCancelled={isCancelled}
-          isCompleted={isCompleted}
-          {...(currentFile?.file.name && { fileName: currentFile.file.name })}
-          {...(currentFile?.file.size && { fileSize: currentFile.file.size })}
-          onCancel={cancelExtraction}
-          onRetry={retryExtraction}
-          onReset={handleReset}
-          className="mb-8"
-        />
+        {isProcessing && (
+          <div className="mb-8 bg-white rounded-lg border border-gray-200 p-6 text-center">
+            <div className="animate-pulse">
+              <div className="h-16 w-16 mx-auto bg-blue-200 rounded-full mb-4 flex items-center justify-center">
+                <span className="text-blue-800 text-2xl">AI</span>
+              </div>
+              <h3 className="text-xl font-medium text-gray-900 mb-2">
+                Procesare în curs...
+              </h3>
+              <p className="text-gray-600">
+                Se analizează documentul cu ajutorul inteligenței artificiale
+              </p>
+              <button
+                onClick={cancelExtraction}
+                className="mt-4 px-4 py-2 bg-red-100 text-red-800 font-medium rounded-lg hover:bg-red-200 transition-colors"
+              >
+                Anulează
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && !isProcessing && (
+          <ErrorDisplay
+            error={error}
+            onRetry={retryExtraction}
+            onReset={handleReset}
+          />
+        )}
 
         {/* Extraction Results */}
         {result && (
@@ -288,8 +372,6 @@ export default function FileUploadPage() {
             onFieldsUpdate={handleFieldsUpdate}
             onExport={handleExport}
             className="mb-8"
-            showConfidence={true}
-            showMetadata={true}
           />
         )}
 

@@ -13,7 +13,7 @@ import type {
   ProcessingError,
   ProgressTrackerOptions,
 } from '@/lib/types/progress-types';
-import { QwenProgressTracker } from '@/lib/progress/qwen-progress-tracker';
+import { LLaVAProgressTracker } from '@/lib/progress/qwen-progress-tracker';
 
 export interface UseProcessingProgressOptions {
   /** Auto-start progress tracking when session is created */
@@ -114,7 +114,7 @@ export function useProcessingProgress(
   const [progress, setProgress] = useState<ProcessingProgress | null>(null);
 
   // Refs
-  const trackerRef = useRef<QwenProgressTracker | null>(null);
+  const trackerRef = useRef<LLaVAProgressTracker | null>(null);
   const currentSessionIdRef = useRef<string | null>(null);
 
   // Create stable callback references
@@ -172,7 +172,7 @@ export function useProcessingProgress(
       },
     };
 
-    trackerRef.current = new QwenProgressTracker(trackerOptions);
+    trackerRef.current = new LLaVAProgressTracker(trackerOptions);
 
     return () => {
       // Cleanup on unmount

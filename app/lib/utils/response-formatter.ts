@@ -156,16 +156,6 @@ export function validateResponseData(data: RomanianIDExtractionResult): {
     issues.push('Missing fields object');
   }
 
-  // Check if confidence object exists
-  if (!data.confidence) {
-    issues.push('Missing confidence object');
-  }
-
-  // Check if overall confidence exists
-  if (!data.overall_confidence) {
-    issues.push('Missing overall confidence');
-  }
-
   // Check if metadata exists
   if (!data.metadata) {
     issues.push('Missing metadata');

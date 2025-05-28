@@ -6,29 +6,15 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import {
-  Edit3,
-  Save,
-  X,
-  Download,
-  AlertTriangle,
-  CheckCircle,
-  Copy,
-  Eye,
-  EyeOff,
-} from 'lucide-react';
+import { Edit3, Save, X, Download, Copy } from 'lucide-react';
 import type {
   RomanianIDExtractionResult,
   RomanianIDFields,
 } from '@/lib/types/romanian-id-types';
 import {
   formatRomanianIDFields,
-  calculateExtractionCompleteness,
-  getConfidenceColor,
-  formatConfidence,
   generateExportData,
   downloadExportedData,
-  validateExtractedFields,
 } from '@/lib/utils/ai-integration-utils';
 
 export interface AIExtractionResultsProps {
@@ -42,10 +28,6 @@ export interface AIExtractionResultsProps {
   onExport?: (_format: 'json' | 'csv' | 'txt') => void;
   /** Custom className */
   className?: string;
-  /** Show confidence scores */
-  showConfidence?: boolean;
-  /** Show metadata */
-  showMetadata?: boolean;
 }
 
 /**
@@ -57,18 +39,13 @@ export default function AIExtractionResults({
   onFieldsUpdate,
   onExport,
   className = '',
-  showConfidence = true,
-  showMetadata = true,
 }: AIExtractionResultsProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedFields, setEditedFields] = useState<RomanianIDFields>(
     result.fields
   );
-  const [showValidation, setShowValidation] = useState(false);
 
   const formattedFields = formatRomanianIDFields(editedFields);
-  const completeness = calculateExtractionCompleteness(editedFields);
-  const validation = validateExtractedFields(editedFields);
 
   /**
    * Handle field value change
@@ -133,7 +110,6 @@ export default function AIExtractionResults({
 
     try {
       await navigator.clipboard.writeText(value);
-      // Could add a toast notification here
     } catch (err) {
       console.error('Failed to copy to clipboard:', err);
     }
@@ -148,98 +124,27 @@ export default function AIExtractionResults({
             <h2 className="text-xl font-semibold text-gray-900">
               Date Extrase din Buletin
             </h2>
-            <p className="text-sm text-gray-600 mt-1">
-              Completitudine: {completeness}% • Încredere generală:{' '}
-              {formatConfidence(result.overall_confidence.score)}
-            </p>
           </div>
 
-          <div className="flex items-center space-x-2">
-            {/* Validation toggle */}
+          {/* Edit toggle */}
+          {editable && (
             <button
-              onClick={() => setShowValidation(!showValidation)}
+              onClick={() => setIsEditing(!isEditing)}
               className={`p-2 rounded-lg transition-colors ${
-                showValidation
-                  ? 'bg-blue-100 text-blue-600'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                isEditing
+                  ? 'bg-red-100 text-red-600'
+                  : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
               }`}
-              title={showValidation ? 'Ascunde validarea' : 'Arată validarea'}
+              title={isEditing ? 'Anulează editarea' : 'Editează câmpurile'}
             >
-              {showValidation ? (
-                <EyeOff className="w-4 h-4" />
+              {isEditing ? (
+                <X className="w-4 h-4" />
               ) : (
-                <Eye className="w-4 h-4" />
+                <Edit3 className="w-4 h-4" />
               )}
             </button>
-
-            {/* Edit toggle */}
-            {editable && (
-              <button
-                onClick={() => setIsEditing(!isEditing)}
-                className={`p-2 rounded-lg transition-colors ${
-                  isEditing
-                    ? 'bg-red-100 text-red-600'
-                    : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
-                }`}
-                title={isEditing ? 'Anulează editarea' : 'Editează câmpurile'}
-              >
-                {isEditing ? (
-                  <X className="w-4 h-4" />
-                ) : (
-                  <Edit3 className="w-4 h-4" />
-                )}
-              </button>
-            )}
-          </div>
+          )}
         </div>
-
-        {/* Validation results */}
-        {showValidation && (
-          <div className="mb-4">
-            {validation.errors.length > 0 && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-3">
-                <div className="flex items-center mb-2">
-                  <AlertTriangle className="w-4 h-4 text-red-600 mr-2" />
-                  <span className="text-sm font-medium text-red-800">
-                    Erori de validare
-                  </span>
-                </div>
-                <ul className="text-sm text-red-700 space-y-1">
-                  {validation.errors.map((error, index) => (
-                    <li key={index}>• {error}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {validation.warnings.length > 0 && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-3">
-                <div className="flex items-center mb-2">
-                  <AlertTriangle className="w-4 h-4 text-yellow-600 mr-2" />
-                  <span className="text-sm font-medium text-yellow-800">
-                    Avertismente
-                  </span>
-                </div>
-                <ul className="text-sm text-yellow-700 space-y-1">
-                  {validation.warnings.map((warning, index) => (
-                    <li key={index}>• {warning}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {validation.isValid && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                <div className="flex items-center">
-                  <CheckCircle className="w-4 h-4 text-green-600 mr-2" />
-                  <span className="text-sm font-medium text-green-800">
-                    Toate câmpurile sunt valide
-                  </span>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Action buttons */}
         {isEditing && (
@@ -266,24 +171,11 @@ export default function AIExtractionResults({
       <div className="p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {Object.entries(formattedFields).map(([fieldName, field]) => {
-            const confidence =
-              result.confidence[fieldName as keyof RomanianIDFields];
-            const confidenceColor = getConfidenceColor(confidence.score);
-
             return (
               <div key={fieldName} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-gray-700">
-                    {field.label}
-                  </label>
-                  {showConfidence && (
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${confidenceColor}`}
-                    >
-                      {formatConfidence(confidence.score)}
-                    </span>
-                  )}
-                </div>
+                <label className="text-sm font-medium text-gray-700">
+                  {field.label}
+                </label>
 
                 <div className="relative">
                   {isEditing ? (
@@ -361,52 +253,6 @@ export default function AIExtractionResults({
           </div>
         </div>
       </div>
-
-      {/* Metadata */}
-      {showMetadata && (
-        <div className="p-6 border-t border-gray-200 bg-gray-50">
-          <h3 className="text-sm font-medium text-gray-900 mb-3">
-            Informații Procesare
-          </h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-            <div>
-              <span className="text-gray-600">Timp procesare:</span>
-              <div className="font-medium">
-                {result.metadata.processing_time}ms
-              </div>
-            </div>
-            <div>
-              <span className="text-gray-600">Model:</span>
-              <div className="font-medium">{result.metadata.model}</div>
-            </div>
-            <div>
-              <span className="text-gray-600">Calitate imagine:</span>
-              <div className="font-medium capitalize">
-                {result.metadata.image_quality}
-              </div>
-            </div>
-            <div>
-              <span className="text-gray-600">Avertismente:</span>
-              <div className="font-medium">
-                {result.metadata.warnings.length}
-              </div>
-            </div>
-          </div>
-
-          {result.metadata.warnings.length > 0 && (
-            <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <div className="text-sm font-medium text-yellow-800 mb-1">
-                Avertismente:
-              </div>
-              <ul className="text-sm text-yellow-700 space-y-1">
-                {result.metadata.warnings.map((warning, index) => (
-                  <li key={index}>• {warning}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }

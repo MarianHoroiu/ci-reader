@@ -5,8 +5,10 @@
 
 // Core Romanian ID fields based on official document structure
 export interface RomanianIDFields {
-  /** Full name (Nume și Prenume) */
+  /** Surname (Nume) */
   nume: string | null;
+  /** Given name (Prenume) */
+  prenume: string | null;
   /** Personal Numeric Code (CNP) */
   cnp: string | null;
   /** Date of birth (Data nașterii) */
@@ -25,24 +27,11 @@ export interface RomanianIDFields {
   valabil_pana_la: string | null;
 }
 
-// Confidence scoring for each field
-export interface FieldConfidence {
-  /** Confidence score between 0 and 1 */
-  score: number;
-  /** Confidence level classification */
-  level: 'high' | 'medium' | 'low';
-  /** Reason for confidence level */
-  reason?: string;
-}
-
 // Romanian ID extraction result with confidence scores
 export interface RomanianIDExtractionResult {
   /** Extracted field values */
   fields: RomanianIDFields;
-  /** Confidence scores for each field */
-  confidence: Record<keyof RomanianIDFields, FieldConfidence>;
-  /** Overall extraction confidence */
-  overall_confidence: FieldConfidence;
+
   /** Processing metadata */
   metadata: {
     /** Processing time in milliseconds */
@@ -123,6 +112,7 @@ export const AI_VISION_ERROR_CODES = {
   IMAGE_TOO_LARGE: 'IMAGE_TOO_LARGE',
   UNSUPPORTED_FORMAT: 'UNSUPPORTED_FORMAT',
   MODEL_UNAVAILABLE: 'MODEL_UNAVAILABLE',
+  AI_SERVICE_UNAVAILABLE: 'AI_SERVICE_UNAVAILABLE',
   PROCESSING_TIMEOUT: 'PROCESSING_TIMEOUT',
   EXTRACTION_FAILED: 'EXTRACTION_FAILED',
   INVALID_RESPONSE: 'INVALID_RESPONSE',

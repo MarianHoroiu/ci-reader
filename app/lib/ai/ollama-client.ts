@@ -1,7 +1,7 @@
 /**
  * Ollama API Client for Romanian ID Processing PWA
  * Provides a TypeScript wrapper for Ollama API interactions
- * Supports Qwen2.5-VL model for vision-language processing
+ * Supports LLaVA model for vision-language processing
  */
 
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
@@ -77,7 +77,7 @@ const DEFAULT_CONFIG: OllamaConfig = {
   host: process.env.OLLAMA_HOST || 'localhost',
   port: parseInt(process.env.OLLAMA_PORT || '11434'),
   timeout: parseInt(process.env.AI_PROCESSING_TIMEOUT || '30000'),
-  model: process.env.OLLAMA_MODEL || 'qwen2.5vl:7b',
+  model: process.env.OLLAMA_MODEL || 'llava:7b',
 };
 
 /**

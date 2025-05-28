@@ -88,6 +88,7 @@ export function validateExtraction(
   // Validate each field
   const fieldNames: (keyof RomanianIDFields)[] = [
     'nume',
+    'prenume',
     'cnp',
     'data_nasterii',
     'locul_nasterii',
@@ -202,10 +203,12 @@ function validateSingleField(
  */
 function getFieldType(
   field: keyof RomanianIDFields
-): 'name' | 'address' | 'city' | 'authority' | 'general' {
+): 'surname' | 'given_name' | 'address' | 'city' | 'authority' | 'general' {
   switch (field) {
     case 'nume':
-      return 'name';
+      return 'surname';
+    case 'prenume':
+      return 'given_name';
     case 'domiciliul':
       return 'address';
     case 'locul_nasterii':
@@ -256,6 +259,15 @@ function addFieldSpecificValidation(
       }
       if (!/^[A-ZĂÂÎȘȚ\s\-']+$/.test(value)) {
         warnings.push('Name contains unexpected characters');
+      }
+      break;
+
+    case 'prenume':
+      if (value.length < 2) {
+        errors.push('Given name too short');
+      }
+      if (!/^[A-ZĂÂÎȘȚ\s\-']+$/.test(value)) {
+        warnings.push('Given name contains unexpected characters');
       }
       break;
 
@@ -458,7 +470,8 @@ export function createTestCases(): PromptTestCase[] {
       imageQuality: 'excellent',
       scenario: 'standard',
       expected: {
-        nume: 'POPESCU MARIA ELENA',
+        nume: 'POPESCU',
+        prenume: 'MARIA ELENA',
         cnp: '2850315123456',
         data_nasterii: '15.03.1985',
         locul_nasterii: 'BUCUREȘTI',
@@ -475,7 +488,8 @@ export function createTestCases(): PromptTestCase[] {
       imageQuality: 'good',
       scenario: 'standard',
       expected: {
-        nume: 'IONESCU ȘTEFAN CĂTĂLIN',
+        nume: 'IONESCU',
+        prenume: 'ȘTEFAN CĂTĂLIN',
         cnp: '1850315123456',
         data_nasterii: '15.03.1985',
         locul_nasterii: 'BRAȘOV',
@@ -492,7 +506,8 @@ export function createTestCases(): PromptTestCase[] {
       imageQuality: 'poor',
       scenario: 'damaged',
       expected: {
-        nume: 'GHEORGHE ALEXANDRA',
+        nume: 'GHEORGHE',
+        prenume: 'ALEXANDRA',
         cnp: '2920512123456',
         data_nasterii: '12.05.1992',
         locul_nasterii: 'CLUJ-NAPOCA',
@@ -509,7 +524,8 @@ export function createTestCases(): PromptTestCase[] {
       imageQuality: 'fair',
       scenario: 'partial',
       expected: {
-        nume: 'MUNTEANU IOANA CRISTINA',
+        nume: 'MUNTEANU',
+        prenume: 'IOANA CRISTINA',
         cnp: '2851201123456',
         data_nasterii: '01.12.1985',
         locul_nasterii: 'TIMIȘOARA',
@@ -526,7 +542,8 @@ export function createTestCases(): PromptTestCase[] {
       imageQuality: 'good',
       scenario: 'complex',
       expected: {
-        nume: 'VASILE CONSTANTIN MARIAN',
+        nume: 'VASILE',
+        prenume: 'CONSTANTIN MARIAN',
         cnp: '1750820123456',
         data_nasterii: '20.08.1975',
         locul_nasterii: 'CONSTANȚA',

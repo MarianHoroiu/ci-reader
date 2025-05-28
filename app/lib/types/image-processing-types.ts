@@ -113,19 +113,13 @@ export interface PerformanceMetrics {
   efficiency: number;
 }
 
-export interface QwenOptimalSpecs {
-  /** Recommended image width */
+export interface LLaVAOptimalSpecs {
   width: number;
-  /** Recommended image height */
   height: number;
-  /** Recommended format */
-  format: 'jpeg' | 'png';
-  /** Recommended quality */
   quality: number;
-  /** Maximum file size */
   maxSize: number;
-  /** Color space */
-  colorSpace: 'sRGB' | 'RGB';
+  format: string;
+  colorSpace: string;
 }
 
 export interface RomanianIDLayoutSpecs {
@@ -169,8 +163,8 @@ export interface ImageProcessingError extends Error {
 }
 
 export interface ProcessingPipelineConfig {
-  /** Qwen model optimal specifications */
-  qwenSpecs: QwenOptimalSpecs;
+  /** LLaVA model optimal specifications */
+  llavaSpecs: LLaVAOptimalSpecs;
   /** Romanian ID layout specifications */
   idLayoutSpecs: RomanianIDLayoutSpecs;
   /** Default processing options */

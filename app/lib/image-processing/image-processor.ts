@@ -1,6 +1,6 @@
 /**
  * Main Image Processing Pipeline
- * Comprehensive image preprocessing for Romanian ID extraction with Qwen2.5-VL-7B-Instruct
+ * Comprehensive image preprocessing for Romanian ID extraction with LLaVA-7B
  */
 
 import type {
@@ -9,7 +9,7 @@ import type {
   ProcessingPipelineConfig,
   ImageQualityMetrics,
   RotationDetectionResult,
-  QwenOptimalSpecs,
+  LLaVAOptimalSpecs,
   RomanianIDLayoutSpecs,
 } from '@/lib/types/image-processing-types';
 
@@ -25,9 +25,9 @@ import {
 } from '@/lib/utils/image-rotation-detector';
 
 /**
- * Qwen2.5-VL-7B-Instruct optimal specifications
+ * LLaVA-7B optimal specifications
  */
-export const QWEN_OPTIMAL_SPECS: QwenOptimalSpecs = {
+export const LLAVA_OPTIMAL_SPECS: LLaVAOptimalSpecs = {
   width: 1024,
   height: 768,
   format: 'jpeg',
@@ -56,13 +56,13 @@ export const ROMANIAN_ID_LAYOUT_SPECS: RomanianIDLayoutSpecs = {
  * Default processing options
  */
 export const DEFAULT_PROCESSING_OPTIONS: ImageProcessingOptions = {
-  targetWidth: QWEN_OPTIMAL_SPECS.width,
-  targetHeight: QWEN_OPTIMAL_SPECS.height,
-  quality: QWEN_OPTIMAL_SPECS.quality,
+  targetWidth: LLAVA_OPTIMAL_SPECS.width,
+  targetHeight: LLAVA_OPTIMAL_SPECS.height,
+  quality: LLAVA_OPTIMAL_SPECS.quality,
   autoRotate: true,
   enhanceQuality: true,
   reduceNoise: true,
-  maxFileSize: QWEN_OPTIMAL_SPECS.maxSize,
+  maxFileSize: LLAVA_OPTIMAL_SPECS.maxSize,
   preserveAspectRatio: true,
 };
 
@@ -70,7 +70,7 @@ export const DEFAULT_PROCESSING_OPTIONS: ImageProcessingOptions = {
  * Processing pipeline configuration
  */
 export const PROCESSING_CONFIG: ProcessingPipelineConfig = {
-  qwenSpecs: QWEN_OPTIMAL_SPECS,
+  llavaSpecs: LLAVA_OPTIMAL_SPECS,
   idLayoutSpecs: ROMANIAN_ID_LAYOUT_SPECS,
   defaultOptions: DEFAULT_PROCESSING_OPTIONS,
   performanceThresholds: {
@@ -140,9 +140,9 @@ export async function processImageForAI(
       processedImageData = await fileToDataURL(file);
     }
 
-    // Step 4: Resize and optimize for Qwen
+    // Step 4: Resize and optimize for LLaVA
     const resizeStart = performance.now();
-    const optimizedImage = await optimizeForQwen(
+    const optimizedImage = await optimizeForLLaVA(
       processedImageData,
       processingOptions,
       validation.metadata
@@ -217,9 +217,9 @@ async function fileToDataURL(file: File): Promise<string> {
 }
 
 /**
- * Optimize image for Qwen2.5-VL-7B-Instruct
+ * Optimize image for LLaVA-7B
  */
-async function optimizeForQwen(
+async function optimizeForLLaVA(
   imageDataURL: string,
   options: ImageProcessingOptions,
   _originalMetadata: any
@@ -308,11 +308,158 @@ function calculateOptimalDimensions(
 }
 
 /**
- * Enhance image quality based on quality metrics
+ * Enhance contrast for better text extraction
+ */
+function enhanceContrast(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number
+): void {
+  const imageData = ctx.getImageData(0, 0, width, height);
+  const data = imageData.data;
+
+  // Higher contrast factor for text extraction
+  const factor = 2.0; // Increased from 1.5 to 2.0 for stronger contrast
+
+  for (let i = 0; i < data.length; i += 4) {
+    // Get RGB values
+    const r = data[i] || 0;
+    const g = data[i + 1] || 0;
+    const b = data[i + 2] || 0;
+
+    // Convert to grayscale for text extraction
+    const gray = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+
+    // Apply contrast adjustment
+    const adjustedGray = 128 + factor * (gray - 128);
+
+    // Apply stronger thresholding for text - good for OCR
+    const threshold = 150;
+    const binarized = adjustedGray > threshold ? 255 : 0;
+
+    // Apply to all channels - makes text clearer against background
+    data[i] = binarized;
+    data[i + 1] = binarized;
+    data[i + 2] = binarized;
+  }
+
+  ctx.putImageData(imageData, 0, 0);
+}
+
+/**
+ * Apply sharpening filter for better OCR
+ */
+function applySharpeningFilter(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number
+): void {
+  // Get image data
+  const imageData = ctx.getImageData(0, 0, width, height);
+  const data = imageData.data;
+  const tempData = new Uint8ClampedArray(data);
+
+  // Stronger sharpening kernel for text
+  const kernel = [
+    -1,
+    -1,
+    -1,
+    -1,
+    15,
+    -1, // Increased center value from 9 to 15 for stronger sharpening
+    -1,
+    -1,
+    -1,
+  ];
+
+  const kSize = 3;
+  const kOffset = Math.floor(kSize / 2);
+
+  // Apply the filter
+  for (let y = kOffset; y < height - kOffset; y++) {
+    for (let x = kOffset; x < width - kOffset; x++) {
+      const offset = (y * width + x) * 4;
+
+      for (let c = 0; c < 3; c++) {
+        let sum = 0;
+
+        for (let ky = 0; ky < kSize; ky++) {
+          for (let kx = 0; kx < kSize; kx++) {
+            const kernelIdx = ky * kSize + kx;
+            const kernelValue = kernel[kernelIdx] || 0;
+            const pixelOffset =
+              ((y + ky - kOffset) * width + (x + kx - kOffset)) * 4 + c;
+            sum += (tempData[pixelOffset] || 0) * kernelValue;
+          }
+        }
+
+        // Clamp values
+        data[offset + c] = Math.max(0, Math.min(255, sum));
+      }
+    }
+  }
+
+  ctx.putImageData(imageData, 0, 0);
+}
+
+/**
+ * Apply OCR-specific optimizations
+ * This improves text detection and extraction
+ */
+function applyOcrOptimizations(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number
+): void {
+  const imageData = ctx.getImageData(0, 0, width, height);
+  const data = imageData.data;
+
+  // Apply adaptive thresholding - very effective for ID cards
+  const blockSize = 25; // Size of neighborhood for adaptive threshold
+  const C = 10; // Constant subtracted from mean
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const offset = (y * width + x) * 4;
+
+      // Calculate local mean (simple box filter)
+      let sum = 0;
+      let count = 0;
+
+      const xStart = Math.max(0, x - Math.floor(blockSize / 2));
+      const xEnd = Math.min(width - 1, x + Math.floor(blockSize / 2));
+      const yStart = Math.max(0, y - Math.floor(blockSize / 2));
+      const yEnd = Math.min(height - 1, y + Math.floor(blockSize / 2));
+
+      for (let ny = yStart; ny <= yEnd; ny++) {
+        for (let nx = xStart; nx <= xEnd; nx++) {
+          const neighborOffset = (ny * width + nx) * 4;
+          sum += data[neighborOffset] || 0; // Use red channel as grayscale
+          count++;
+        }
+      }
+
+      const mean = sum / count;
+      const threshold = mean - C;
+
+      // Apply threshold
+      const pixel = data[offset] || 0;
+      const value = pixel < threshold ? 0 : 255;
+
+      // Apply to all channels
+      data[offset] = data[offset + 1] = data[offset + 2] = value;
+    }
+  }
+
+  ctx.putImageData(imageData, 0, 0);
+}
+
+/**
+ * Enhance image quality for better ID card text extraction
  */
 async function enhanceImageQuality(
   imageDataURL: string,
-  qualityMetrics: ImageQualityMetrics
+  _qualityMetrics: ImageQualityMetrics // Renamed to _qualityMetrics to indicate it's not used
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -331,146 +478,26 @@ async function enhanceImageQuality(
         canvas.height = img.height;
         ctx.drawImage(img, 0, 0);
 
-        // Apply enhancements based on quality metrics
-        if (qualityMetrics.contrast < 0.5) {
-          enhanceContrast(ctx, canvas.width, canvas.height);
-        }
+        // Always apply these enhancements for ID card processing
+        enhanceContrast(ctx, canvas.width, canvas.height);
+        applySharpeningFilter(ctx, canvas.width, canvas.height);
+        applyOcrOptimizations(ctx, canvas.width, canvas.height);
 
-        if (
-          qualityMetrics.brightness < 0.4 ||
-          qualityMetrics.brightness > 0.8
-        ) {
-          adjustBrightness(
-            ctx,
-            canvas.width,
-            canvas.height,
-            qualityMetrics.brightness
-          );
-        }
-
-        if (qualityMetrics.sharpness < 0.5) {
-          applySharpeningFilter(ctx, canvas.width, canvas.height);
-        }
-
-        const enhancedDataURL = canvas.toDataURL('image/jpeg', 0.9);
+        // Convert back to data URL
+        const enhancedDataURL = canvas.toDataURL('image/jpeg', 0.95);
         resolve(enhancedDataURL);
       } catch (error) {
+        console.error('Error enhancing image:', error);
         reject(error);
       }
     };
 
-    img.onerror = () =>
-      reject(new Error('Failed to load image for enhancement'));
+    img.onerror = () => {
+      reject(new Error('Could not load image for enhancement'));
+    };
+
     img.src = imageDataURL;
   });
-}
-
-/**
- * Enhance image contrast
- */
-function enhanceContrast(
-  ctx: CanvasRenderingContext2D,
-  width: number,
-  height: number
-): void {
-  const imageData = ctx.getImageData(0, 0, width, height);
-  const data = imageData.data;
-
-  const factor = 1.3; // Contrast enhancement factor
-
-  for (let i = 0; i < data.length; i += 4) {
-    // Apply contrast enhancement to RGB channels
-    const r = data[i];
-    const g = data[i + 1];
-    const b = data[i + 2];
-
-    if (r !== undefined && g !== undefined && b !== undefined) {
-      data[i] = Math.min(255, Math.max(0, (r - 128) * factor + 128)); // Red
-      data[i + 1] = Math.min(255, Math.max(0, (g - 128) * factor + 128)); // Green
-      data[i + 2] = Math.min(255, Math.max(0, (b - 128) * factor + 128)); // Blue
-    }
-  }
-
-  ctx.putImageData(imageData, 0, 0);
-}
-
-/**
- * Adjust image brightness
- */
-function adjustBrightness(
-  ctx: CanvasRenderingContext2D,
-  width: number,
-  height: number,
-  currentBrightness: number
-): void {
-  const imageData = ctx.getImageData(0, 0, width, height);
-  const data = imageData.data;
-
-  // Calculate brightness adjustment
-  const targetBrightness = 0.6; // Optimal brightness
-  const adjustment = (targetBrightness - currentBrightness) * 50;
-
-  for (let i = 0; i < data.length; i += 4) {
-    const r = data[i];
-    const g = data[i + 1];
-    const b = data[i + 2];
-
-    if (r !== undefined && g !== undefined && b !== undefined) {
-      data[i] = Math.min(255, Math.max(0, r + adjustment)); // Red
-      data[i + 1] = Math.min(255, Math.max(0, g + adjustment)); // Green
-      data[i + 2] = Math.min(255, Math.max(0, b + adjustment)); // Blue
-    }
-  }
-
-  ctx.putImageData(imageData, 0, 0);
-}
-
-/**
- * Apply sharpening filter
- */
-function applySharpeningFilter(
-  ctx: CanvasRenderingContext2D,
-  width: number,
-  height: number
-): void {
-  const imageData = ctx.getImageData(0, 0, width, height);
-  const data = imageData.data;
-  const newData = new Uint8ClampedArray(data);
-
-  // Sharpening kernel
-  const kernel = [
-    [0, -1, 0],
-    [-1, 5, -1],
-    [0, -1, 0],
-  ];
-
-  for (let y = 1; y < height - 1; y++) {
-    for (let x = 1; x < width - 1; x++) {
-      for (let c = 0; c < 3; c++) {
-        // RGB channels
-        let sum = 0;
-
-        for (let ky = -1; ky <= 1; ky++) {
-          for (let kx = -1; kx <= 1; kx++) {
-            const pixelIndex = ((y + ky) * width + (x + kx)) * 4 + c;
-            const kernelRow = kernel[ky + 1];
-            const pixelValue = data[pixelIndex];
-            const kernelValue = kernelRow?.[kx + 1];
-
-            if (pixelValue !== undefined && kernelValue !== undefined) {
-              sum += pixelValue * kernelValue;
-            }
-          }
-        }
-
-        const currentIndex = (y * width + x) * 4 + c;
-        newData[currentIndex] = Math.min(255, Math.max(0, sum));
-      }
-    }
-  }
-
-  const newImageData = new ImageData(newData, width, height);
-  ctx.putImageData(newImageData, 0, 0);
 }
 
 /**

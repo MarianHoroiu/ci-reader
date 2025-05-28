@@ -74,7 +74,8 @@ NextJS PWA Application
 ### 2. Data Extraction
 
 - Extract Romanian ID fields:
-  - Full Name (Nume și Prenume)
+  - Surname (Nume)
+  - Given Name (Prenume)
   - Personal Numeric Code (CNP)
   - Date of Birth (Data nașterii)
   - Place of Birth (Locul nașterii)

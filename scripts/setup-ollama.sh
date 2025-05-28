@@ -15,9 +15,11 @@ NC='\033[0m' # No Color
 
 # Configuration
 OLLAMA_VERSION_MIN="0.7.0"
-REQUIRED_RAM_GB=6
-REQUIRED_DISK_GB=12
+REQUIRED_RAM_GB=8
+REQUIRED_DISK_GB=15
 OLLAMA_PORT=11434
+MODEL_NAME="llava:7b"
+MODEL_DISPLAY_NAME="LLaVA"
 
 # Logging function
 log() {
@@ -79,7 +81,7 @@ check_system_requirements() {
     
     if [ "$TOTAL_RAM_GB" -lt "$REQUIRED_RAM_GB" ]; then
         log_error "Insufficient RAM: ${TOTAL_RAM_GB}GB available, ${REQUIRED_RAM_GB}GB required"
-        log_error "Qwen2.5-VL-7B-Instruct requires at least ${REQUIRED_RAM_GB}GB RAM"
+        log_error "$MODEL_DISPLAY_NAME requires at least ${REQUIRED_RAM_GB}GB RAM"
         exit 1
     fi
     log_success "RAM check passed: ${TOTAL_RAM_GB}GB available"
@@ -97,7 +99,7 @@ check_system_requirements() {
     
     if [ "$AVAILABLE_DISK_GB" -lt "$REQUIRED_DISK_GB" ]; then
         log_error "Insufficient disk space: ${AVAILABLE_DISK_GB}GB available, ${REQUIRED_DISK_GB}GB required"
-        log_error "Qwen2.5-VL model requires approximately ${REQUIRED_DISK_GB}GB storage"
+        log_error "$MODEL_DISPLAY_NAME model requires approximately ${REQUIRED_DISK_GB}GB storage"
         exit 1
     fi
     log_success "Disk space check passed: ${AVAILABLE_DISK_GB}GB available"
@@ -269,7 +271,7 @@ main() {
     
     log_success "Ollama setup completed successfully!"
     log "Next steps:"
-    log "1. Run './scripts/install-qwen-vision.sh' to download the Qwen2.5-VL model"
+    log "1. Run './scripts/install-llava-vision.sh' to download the $MODEL_DISPLAY_NAME model"
     log "2. Check the setup documentation in 'docs/ollama-setup-guide.md'"
     log ""
     log "Ollama is running on: http://localhost:$OLLAMA_PORT"

@@ -26,34 +26,70 @@ export interface FieldPattern {
 }
 
 /**
- * Name field extraction pattern
+ * Surname field extraction pattern
  */
 export const NUME_PATTERN: FieldPattern = {
   field: 'nume',
-  description: 'Full name extraction with Romanian diacritics',
+  description: 'Surname extraction with Romanian diacritics',
   pattern: /^[A-ZĂÂÎȘȚ\s\-']+$/,
   instructions: `
-Extract the complete full name (Nume și Prenume):
+Extract the surname (Nume/Lastname):
 - Usually appears in UPPERCASE letters
 - May contain Romanian diacritics: Ă, Â, Î, Ș, Ț
-- Can include hyphens for compound names
-- May have multiple middle names
+- Can include hyphens for compound surnames
 - Preserve exact spacing and diacritics
-- Common format: "SURNAME FIRSTNAME MIDDLENAME"
+- Common format: "POPESCU" or "IONESCU-STAN"
 `,
   variations: [
-    'POPESCU MARIA ELENA',
-    'IONESCU-STAN ALEXANDRA',
-    'GHEORGHE ȘTEFAN CĂTĂLIN',
-    'MUNTEANU IOANA CRISTINA',
-    'TRIHENEA MANOLE',
-    'POPESCU-TĂRICEANU ANTON CĂLIN CONSTANTIN',
+    'POPESCU',
+    'IONESCU-STAN',
+    'GHEORGHE',
+    'MUNTEANU',
+    'TRIHENEA',
+    'POPESCU-TĂRICEANU',
   ],
   validate: (value: string): boolean => {
     if (!value || value.trim().length < 2) return false;
-    // Must contain at least two words (surname + firstname)
-    const words = value.trim().split(/\s+/);
-    return words.length >= 2 && words.every(word => word.length > 0);
+    return true;
+  },
+  normalize: (value: string): string => {
+    return value.trim().replace(/\s+/g, ' ').toUpperCase();
+  },
+  commonErrors: [
+    'Missing diacritics (using A instead of Ă)',
+    'Incorrect case (lowercase instead of uppercase)',
+    'Extra spaces',
+    'Truncated names due to image boundaries',
+  ],
+};
+
+/**
+ * Given name field extraction pattern
+ */
+export const PRENUME_PATTERN: FieldPattern = {
+  field: 'prenume',
+  description: 'Given name extraction with Romanian diacritics',
+  pattern: /^[A-ZĂÂÎȘȚ\s\-']+$/,
+  instructions: `
+Extract the given name/first name (Prenume):
+- Usually appears in UPPERCASE letters
+- May contain Romanian diacritics: Ă, Â, Î, Ș, Ț
+- Can include hyphens for compound names
+- May have multiple given names
+- Preserve exact spacing and diacritics
+- Common format: "MARIA ELENA" or "ȘTEFAN CĂTĂLIN"
+`,
+  variations: [
+    'MARIA ELENA',
+    'ALEXANDRA',
+    'ȘTEFAN CĂTĂLIN',
+    'IOANA CRISTINA',
+    'MANOLE',
+    'ANTON CĂLIN CONSTANTIN',
+  ],
+  validate: (value: string): boolean => {
+    if (!value || value.trim().length < 2) return false;
+    return true;
   },
   normalize: (value: string): string => {
     return value.trim().replace(/\s+/g, ' ').toUpperCase();
@@ -355,6 +391,7 @@ Extract the birth place:
  */
 export const FIELD_PATTERNS = {
   nume: NUME_PATTERN,
+  prenume: PRENUME_PATTERN,
   cnp: CNP_PATTERN,
   data_nasterii: DATE_PATTERN,
   locul_nasterii: BIRTH_PLACE_PATTERN,

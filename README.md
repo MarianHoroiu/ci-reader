@@ -1,5 +1,35 @@
 # Romanian ID Processing PWA
 
+## 🚀 Quick Start
+
+### Option 1: Automatic Setup (Recommended)
+
+```bash
+# Start Ollama and the dev server in one command
+npm run dev:full
+```
+
+### Option 2: Manual Setup
+
+```bash
+# Start Ollama with LLaVA model
+npm run start:ollama
+
+# In another terminal, start the dev server
+npm run dev
+```
+
+### Health Check
+
+```bash
+# Check if everything is working
+npm run ai:health
+```
+
+---
+
+## Overview
+
 A Progressive Web Application for processing Romanian Identity Cards and auto-filling document
 templates with extracted personal data. Built with Next.js 15, React 19, and TypeScript for
 privacy-focused, offline-capable document processing.
@@ -21,29 +51,6 @@ privacy-focused, offline-capable document processing.
 - **Push Notifications**: Receive updates and processing status notifications
 - **Background Sync**: Sync data when connection is restored
 - **Responsive Design**: Optimized for all screen sizes and devices
-
-## 📱 PWA Manifest Configuration
-
-### Icons
-
-The application includes a complete set of icons for all platforms:
-
-- **Favicon**: `favicon.ico`, `icon.svg` (32x32)
-- **PWA Icons**: 72x72, 96x96, 128x128, 144x144, 192x192, 512x512 (SVG format)
-- **Apple Touch Icon**: 180x180 PNG format
-- **Microsoft Tiles**: Configured via `browserconfig.xml`
-
-### Manifest Features
-
-- **App Name**: "Romanian ID Processor"
-- **Theme Colors**: Romanian flag colors (#002b7f, #fcd116, #ce1126)
-- **Display Mode**: Standalone (full-screen app experience)
-- **Orientation**: Portrait (optimized for document scanning)
-- **Start URL**: "/" with UTM tracking
-- **Scope**: Full application scope
-- **Background Sync**: Enabled for offline data processing
-- **Shortcuts**: Quick access to main features
-- **Screenshots**: App store preview images
 
 ## 🛠️ Technology Stack
 
@@ -371,3 +378,87 @@ For support and questions:
 ---
 
 **Romanian ID Processing PWA** - Privacy-focused document processing for Romanian Identity Cards
+
+## AI Processing Configuration
+
+This application uses **real AI processing only** via Ollama with vision models. There are no mock
+responses or fake data - all processing is done by actual AI models.
+
+### Requirements
+
+- **Ollama Server**: Must be running with a vision model installed
+- **Vision Model**: LLaVA-7B for vision and text processing
+- **Network Access**: API must be able to reach the Ollama server
+
+### Environment Variables
+
+```bash
+# Ollama Configuration (required for AI processing)
+OLLAMA_BASE_URL=http://localhost:11434  # Your Ollama server URL
+OLLAMA_MODEL=llava:7b                   # Vision model name
+```
+
+### Setup Instructions
+
+1. **Install Ollama**:
+
+```bash
+# Install Ollama
+curl -fsSL https://ollama.ai/install.sh | sh
+```
+
+2. **Pull the Vision Model**:
+
+```bash
+# Pull LLaVA model (stable vision model)
+ollama pull llava:7b
+```
+
+3. **Start Ollama Server**:
+
+```bash
+# Start Ollama (runs on http://localhost:11434 by default)
+ollama serve
+```
+
+4. **Configure Environment**:
+
+```bash
+# Set the model in .env.local
+OLLAMA_MODEL=llava:7b
+```
+
+### Production Deployment
+
+For production deployment:
+
+1. **Set up Ollama Server** on your production infrastructure
+2. **Configure Environment Variables**:
+   ```bash
+   OLLAMA_BASE_URL=http://your-ollama-server:11434
+   OLLAMA_MODEL=llava:7b
+   ```
+3. **Ensure Network Connectivity** between your app and Ollama server
+4. **Monitor Resources** - Vision models require significant GPU/CPU resources
+
+### Error Handling
+
+When Ollama is unavailable, users will receive clear error messages:
+
+- "AI processing service is currently unavailable"
+- Instructions to check Ollama server status
+- Retry functionality built into the UI
+
+### Health Check
+
+Check the API health and Ollama connectivity:
+
+```bash
+curl http://localhost:3000/api/ai-vision-ocr
+```
+
+This will show:
+
+- Ollama connection status
+- Available models
+- Whether your configured model is available

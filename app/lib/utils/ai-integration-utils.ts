@@ -9,10 +9,7 @@ import type {
   AIVisionOCRResponse,
   AIVisionErrorCode,
 } from '@/lib/types/romanian-id-types';
-import {
-  AI_VISION_ERROR_CODES,
-  isValidErrorCode,
-} from '@/lib/types/romanian-id-types';
+import { isValidErrorCode } from '@/lib/types/romanian-id-types';
 
 /**
  * Convert File to base64 string for AI processing
@@ -88,7 +85,7 @@ export function processAIResponse(response: AIVisionOCRResponse): {
   const errorCode =
     response.error?.code && isValidErrorCode(response.error.code)
       ? response.error.code
-      : AI_VISION_ERROR_CODES.INTERNAL_ERROR;
+      : 'INTERNAL_ERROR';
 
   return {
     success: false,
@@ -114,9 +111,14 @@ export function formatRomanianIDFields(fields: RomanianIDFields): Record<
 > {
   return {
     nume: {
-      label: 'Nume și Prenume',
+      label: 'Nume',
       value: fields.nume,
       formatted: fields.nume || 'Nu a fost detectat',
+    },
+    prenume: {
+      label: 'Prenume',
+      value: fields.prenume,
+      formatted: fields.prenume || 'Nu a fost detectat',
     },
     cnp: {
       label: 'CNP',
@@ -162,36 +164,6 @@ export function formatRomanianIDFields(fields: RomanianIDFields): Record<
 }
 
 /**
- * Calculate extraction completeness percentage
- */
-export function calculateExtractionCompleteness(
-  fields: RomanianIDFields
-): number {
-  const totalFields = Object.keys(fields).length;
-  const filledFields = Object.values(fields).filter(
-    value => value !== null && value.trim() !== ''
-  ).length;
-
-  return Math.round((filledFields / totalFields) * 100);
-}
-
-/**
- * Get confidence level color for UI
- */
-export function getConfidenceColor(confidence: number): string {
-  if (confidence >= 0.8) return 'text-green-600 bg-green-100';
-  if (confidence >= 0.6) return 'text-yellow-600 bg-yellow-100';
-  return 'text-red-600 bg-red-100';
-}
-
-/**
- * Format confidence score for display
- */
-export function formatConfidence(confidence: number): string {
-  return `${Math.round(confidence * 100)}%`;
-}
-
-/**
  * Generate export data for Romanian ID extraction
  */
 export function generateExportData(
@@ -205,9 +177,6 @@ export function generateExportData(
       return JSON.stringify(
         {
           fields: result.fields,
-          confidence: result.confidence,
-          overall_confidence: result.overall_confidence,
-          metadata: result.metadata,
           exported_at: new Date().toISOString(),
         },
         null,
@@ -216,11 +185,10 @@ export function generateExportData(
     }
 
     case 'csv': {
-      const csvHeaders = 'Field,Value,Confidence\n';
+      const csvHeaders = 'Field,Value\n';
       const csvRows = Object.entries(formattedFields)
-        .map(([key, field]) => {
-          const confidence = result.confidence[key as keyof RomanianIDFields];
-          return `"${field.label}","${field.value || ''}","${formatConfidence(confidence.score)}"`;
+        .map(([_, field]) => {
+          return `"${field.label}","${field.value || ''}"`;
         })
         .join('\n');
       return csvHeaders + csvRows;
@@ -228,16 +196,14 @@ export function generateExportData(
 
     case 'txt': {
       const txtContent = Object.entries(formattedFields)
-        .map(([key, field]) => {
-          const confidence = result.confidence[key as keyof RomanianIDFields];
-          return `${field.label}: ${field.value || 'Nu a fost detectat'} (Încredere: ${formatConfidence(confidence.score)})`;
+        .map(([_, field]) => {
+          return `${field.label}: ${field.value || 'Nu a fost detectat'}`;
         })
         .join('\n');
 
       return (
         `Extragere Date Buletin de Identitate Român\n` +
-        `Generat la: ${new Date().toLocaleString('ro-RO')}\n` +
-        `Încredere generală: ${formatConfidence(result.overall_confidence.score)}\n\n` +
+        `Generat la: ${new Date().toLocaleString('ro-RO')}\n\n` +
         txtContent
       );
     }
@@ -269,58 +235,10 @@ export function downloadExportedData(
 }
 
 /**
- * Validate extracted fields for common issues
- */
-export function validateExtractedFields(fields: RomanianIDFields): {
-  isValid: boolean;
-  warnings: string[];
-  errors: string[];
-} {
-  const warnings: string[] = [];
-  const errors: string[] = [];
-
-  // CNP validation
-  if (fields.cnp) {
-    if (!/^\d{13}$/.test(fields.cnp)) {
-      errors.push('CNP-ul trebuie să conțină exact 13 cifre');
-    }
-  }
-
-  // Date format validation
-  const dateFields = [
-    'data_nasterii',
-    'data_eliberarii',
-    'valabil_pana_la',
-  ] as const;
-  dateFields.forEach(field => {
-    const value = fields[field];
-    if (value && !/^\d{2}\.\d{2}\.\d{4}$/.test(value)) {
-      warnings.push(
-        `Formatul datei pentru ${field} pare incorect (așteptat: DD.MM.YYYY)`
-      );
-    }
-  });
-
-  // Check for empty critical fields
-  const criticalFields = ['nume', 'cnp'] as const;
-  criticalFields.forEach(field => {
-    if (!fields[field] || fields[field]?.trim() === '') {
-      errors.push(`Câmpul ${field} este obligatoriu`);
-    }
-  });
-
-  return {
-    isValid: errors.length === 0,
-    warnings,
-    errors,
-  };
-}
-
-/**
  * Get user-friendly error message for AI processing errors
  */
 export function getAIErrorMessage(errorCode: AIVisionErrorCode): string {
-  const errorMessages: Record<AIVisionErrorCode, string> = {
+  const errorMessages: Record<string, string> = {
     INVALID_IMAGE:
       'Imaginea încărcată nu este validă. Vă rugăm să încărcați o imagine clară a buletinului.',
     IMAGE_TOO_LARGE:
@@ -329,6 +247,8 @@ export function getAIErrorMessage(errorCode: AIVisionErrorCode): string {
       'Formatul imaginii nu este suportat. Folosiți JPG, PNG sau PDF.',
     MODEL_UNAVAILABLE:
       'Serviciul de procesare AI nu este disponibil momentan. Încercați din nou mai târziu.',
+    AI_SERVICE_UNAVAILABLE:
+      'Serviciul de procesare AI nu este disponibil momentan. Vă rugăm să încercați din nou mai târziu.',
     PROCESSING_TIMEOUT:
       'Procesarea a durat prea mult timp. Încercați din nou cu o imagine mai mică.',
     EXTRACTION_FAILED:

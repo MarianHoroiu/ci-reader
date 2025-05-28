@@ -1,415 +1,878 @@
 /**
- * AI Vision OCR API Endpoint
- * Processes Romanian ID images using Qwen2.5-VL model via Ollama
+ * AI Vision OCR API Route
+ * Processes Romanian ID images using LLaVA model via Ollama
  * Accepts multipart/form-data uploads and returns structured JSON data
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { validateImageForAI } from '@/lib/validation/image-validator';
-import {
-  optimizeForRomanianID,
-  estimateProcessingTime,
-} from '@/lib/ai/image-handler';
-import {
-  processWithRetry,
-  type QwenVisionOptions,
-} from '@/lib/ai/qwen-vision-processor';
-import {
-  createSuccessResponse,
-  createErrorResponse,
-  createErrorDetails,
-  generateRequestId,
-  createPerformanceMetrics,
-  logResponse,
-  sanitizeResponseData,
-  validateResponseData,
-  type ResponseMetadata,
-} from '@/lib/utils/response-formatter';
-import { ollamaClient } from '@/lib/ai/ollama-client';
-import {
-  AI_VISION_ERROR_CODES,
-  type AIVisionErrorCode,
+import type {
+  AIVisionOCRResponse,
+  RomanianIDExtractionResult,
 } from '@/lib/types/romanian-id-types';
 
-// Request timeout (8 seconds as per requirements)
-const REQUEST_TIMEOUT = 8000;
-
-// Maximum concurrent requests
-const MAX_CONCURRENT_REQUESTS = 3;
-
-// Simple in-memory request tracking
-let activeRequests = 0;
+// Configuration
+const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'qwen2.5vl:7b';
 
 /**
- * POST /api/ai-vision-ocr
- * Processes Romanian ID images and extracts structured data
+ * Generate a unique request ID
  */
-export async function POST(request: NextRequest): Promise<NextResponse> {
-  const requestId = generateRequestId();
-  const startTime = Date.now();
+function generateRequestId(): string {
+  return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}
 
-  // Check concurrent request limit
-  if (activeRequests >= MAX_CONCURRENT_REQUESTS) {
-    const response = createErrorResponse(
-      createErrorDetails(
-        AI_VISION_ERROR_CODES.PROCESSING_TIMEOUT,
-        'Server is busy processing other requests. Please try again in a few seconds.',
-        { active_requests: activeRequests }
-      ),
-      {
-        request_id: requestId,
-        timestamp: new Date().toISOString(),
-        processing_time: Date.now() - startTime,
-      }
-    );
+/**
+ * Convert file to base64 for Ollama
+ */
+async function fileToBase64(file: File): Promise<string> {
+  const arrayBuffer = await file.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+  return buffer.toString('base64');
+}
 
-    return NextResponse.json(response, { status: 429 });
+/**
+ * Process extracted data to ensure proper structure and validate it's not just returning template values
+ */
+function processExtractedData(data: any): {
+  data: any;
+  isValid: boolean;
+  invalidReason?: string;
+} {
+  // Ensure fields object exists
+  if (!data.fields) {
+    data.fields = {};
+    return { data, isValid: false, invalidReason: 'Missing fields object' };
   }
 
-  activeRequests++;
+  // Add empty confidence object if not provided by the model
+  if (!data.confidence) {
+    data.confidence = {};
 
+    // Create confidence entries for each field
+    for (const field in data.fields) {
+      data.confidence[field] = {
+        score: 0.7,
+        level: 'medium',
+        reason: 'Default confidence level',
+      };
+    }
+  }
+
+  // Ensure overall_confidence exists
+  if (!data.overall_confidence) {
+    data.overall_confidence = {
+      score: 0.5,
+      level: 'medium',
+      reason: 'Default confidence level assigned due to missing data',
+    };
+  }
+
+  // Check if the model just returned template values instead of actual extraction
+  const templateValues = [
+    'EXTRACTED SURNAME ONLY',
+    'EXTRACTED GIVEN NAME(S) ONLY',
+    '13 DIGITS WITH NO SPACES',
+    'DD.MM.YYYY FORMAT',
+    'EXTRACTED PLACE',
+    'FULL ADDRESS',
+    'SERIES AND NUMBER',
+    'ISSUING AUTHORITY',
+    '[EXTRACTED SURNAME ONLY]',
+    '[EXTRACTED GIVEN NAME(S) ONLY]',
+    '[13 DIGITS WITH NO SPACES]',
+    '[DD.MM.YYYY FORMAT]',
+    '[EXTRACTED PLACE]',
+    '[FULL ADDRESS]',
+    '[SERIES AND NUMBER]',
+    '[ISSUING AUTHORITY]',
+    'Surname',
+    'Given name',
+    'Birth date in DD.MM.YYYY format',
+    'Place of birth',
+    'Address/domicile',
+    'Series and number (e.g., XX 123456)',
+    'Issue date in DD.MM.YYYY format',
+    'Issuing authority',
+    'Expiry date in DD.MM.YYYY format',
+  ];
+
+  // Check each field to see if it's a template value
+  for (const field in data.fields) {
+    const value = data.fields[field];
+    if (
+      typeof value === 'string' &&
+      templateValues.some(template => value.includes(template))
+    ) {
+      return {
+        data,
+        isValid: false,
+        invalidReason: `Field '${field}' contains template text: '${value}'. The model returned instructions instead of extracted data.`,
+      };
+    }
+  }
+
+  return { data, isValid: true };
+}
+
+/**
+ * Create Romanian ID extraction prompt
+ */
+function createExtractionPrompt(): string {
+  return `You are an expert Romanian document analyst specializing in Romanian ID cards (Carte de Identitate). Your task is to extract information with perfect accuracy.
+
+RESPONSE FORMAT REQUIREMENT: YOU MUST RETURN ONLY JSON. DO NOT RETURN ANY TEXT, MARKDOWN OR EXPLANATION - ONLY VALID JSON.
+
+DOCUMENT ANALYSIS INSTRUCTIONS:
+1. Examine the image of the Romanian ID card systematically
+2. Pay special attention to field labels and their corresponding values
+3. Extract EXACTLY what is written on the document, preserving capitalization and diacritics
+4. Distinguish between field labels and actual values
+5. Be precise with surname vs given name fields
+
+FIELD FORMATS AND GUIDELINES:
+
+NUME (Surname/Family name):
+- Extract only the surname/family name
+- Usually appears in ALL CAPS with Romanian diacritics
+- May contain hyphens for compound surnames
+- Common locations: Near the "NUME:" or "NUME" label on the ID
+- Example format: "POPESCU" or "STAN-IONESCU" (DO NOT USE THESE VALUES - extract the actual name)
+
+PRENUME (Given name/First name):
+- Extract only the given/first name(s)
+- Usually appears in ALL CAPS with Romanian diacritics
+- May contain multiple given names
+- Common locations: Near the "PRENUME:" or "PRENUME" label on the ID
+- Example format: "MARIA ELENA" or "ION" (DO NOT USE THESE VALUES - extract the actual name)
+
+CNP (Personal Numeric Code):
+- Must be exactly 13 digits with no spaces
+- Common locations: Near the "CNP:" or "CNP" label on the ID
+- Format: 13 consecutive digits
+
+DATA NAȘTERII (Birth Date):
+- Must be in DD.MM.YYYY format
+- Has periods (.) between day, month, and year
+- Common locations: Near the "DATA NAȘTERII:" label on the ID
+
+LOCUL NAȘTERII (Birth Place):
+- Usually a city or locality name
+- May include county or region
+- Common locations: Near the "LOCUL NAȘTERII:" label on the ID
+
+DOMICILIUL (Address):
+- Complete residential address
+- May include street, number, block, apartment, city
+- Common locations: Near the "DOMICILIUL:" label on the ID
+
+SERIA ȘI NUMĂRUL (ID Series and Number):
+- Format: Letters followed by space and numbers (e.g., "XX 123456")
+- Common locations: Near the "SERIA" and "NR." labels on the ID
+
+DATA ELIBERĂRII (Issue Date):
+- Must be in DD.MM.YYYY format
+- Has periods (.) between day, month, and year
+- Common locations: Near the "DATA ELIBERĂRII:" label on the ID
+
+ELIBERAT DE (Issuing Authority):
+- Usually starts with "SPCLEP" followed by a location
+- Common locations: Near the "ELIBERAT DE:" label on the ID
+
+VALABIL PÂNĂ LA (Expiry Date):
+- Must be in DD.MM.YYYY format
+- Has periods (.) between day, month, and year
+- Common locations: Near the "VALABIL PÂNĂ LA:" label on the ID
+
+ROMANIAN ID CARD LAYOUT:
+- Top section: ROMÂNIA, EU stars, etc.
+- Middle left: Photo and signature
+- Middle right: Personal information (name, CNP, birth)
+- Bottom section: Address, series/number, dates, authority
+
+OUTPUT FORMAT:
+YOU MUST RETURN ONLY JSON. NO TEXT BEFORE OR AFTER THE JSON. Return exactly this structure:
+
+{
+  "fields": {
+    "nume": "[EXTRACTED SURNAME ONLY]",
+    "prenume": "[EXTRACTED GIVEN NAME(S) ONLY]",
+    "cnp": "[13 DIGITS WITH NO SPACES]",
+    "data_nasterii": "[DD.MM.YYYY FORMAT]",
+    "locul_nasterii": "[EXTRACTED PLACE]",
+    "domiciliul": "[FULL ADDRESS]",
+    "seria_si_numarul": "[SERIES AND NUMBER]",
+    "data_eliberarii": "[DD.MM.YYYY FORMAT]",
+    "eliberat_de": "[ISSUING AUTHORITY]",
+    "valabil_pana_la": "[DD.MM.YYYY FORMAT]"
+  },
+  "overall_confidence": {
+    "score": 0.0-1.0,
+    "reason": "Overall assessment explanation",
+    "level": "low|medium|high"
+  }
+}
+
+CRITICAL RULES:
+1. Return ONLY valid JSON, no additional text or markdown
+2. If you cannot see a value clearly, use null for that field, but NEVER use the string "null"
+3. EXTRACT ACTUAL TEXT from the document, not placeholders
+4. SPLIT the person's name into surname (nume) and given name (prenume) correctly
+5. DO NOT make up information - if you can't see it, use null
+6. Always preserve Romanian diacritics in text
+7. If no ID document is visible, set all fields to null and explain in overall_confidence
+8. DO NOT USE PLACEHOLDER TEXT OR EXAMPLES - extract only the real data from the image
+9. RESPOND ONLY WITH JSON - NO EXPLANATIONS BEFORE OR AFTER THE JSON`;
+}
+
+/**
+ * Check if Ollama service is running
+ */
+async function checkOllamaStatus(): Promise<boolean> {
   try {
-    // Set up timeout
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => {
-        reject(new Error('Request timeout'));
-      }, REQUEST_TIMEOUT);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout
+
+    const response = await fetch(`${OLLAMA_BASE_URL}/api/tags`, {
+      method: 'GET',
+      signal: controller.signal,
     });
 
-    // Process the request with timeout
-    const result = await Promise.race([
-      processRequest(request, requestId, startTime),
-      timeoutPromise,
-    ]);
-
-    return result;
+    clearTimeout(timeoutId);
+    return response.ok;
   } catch (error) {
-    console.error('[AI Vision OCR] Request failed:', error);
-
-    const errorCode: AIVisionErrorCode =
-      error instanceof Error && error.message === 'Request timeout'
-        ? AI_VISION_ERROR_CODES.PROCESSING_TIMEOUT
-        : AI_VISION_ERROR_CODES.INTERNAL_ERROR;
-
-    const response = createErrorResponse(
-      createErrorDetails(
-        errorCode,
-        error instanceof Error ? error.message : 'Unknown error occurred'
-      ),
-      {
-        request_id: requestId,
-        timestamp: new Date().toISOString(),
-        processing_time: Date.now() - startTime,
-      }
-    );
-
-    const statusCode =
-      errorCode === AI_VISION_ERROR_CODES.PROCESSING_TIMEOUT ? 408 : 500;
-    return NextResponse.json(response, { status: statusCode });
-  } finally {
-    activeRequests--;
+    console.error('Ollama status check failed:', error);
+    return false;
   }
 }
 
 /**
- * Processes the actual request
+ * Call Ollama API for image analysis
  */
-async function processRequest(
-  request: NextRequest,
-  requestId: string,
-  startTime: number
-): Promise<NextResponse> {
-  try {
-    // Check if Ollama service is available
-    const healthCheck = await ollamaClient.healthCheck();
-    if (healthCheck.status === 'error') {
-      const response = createErrorResponse(
-        createErrorDetails(
-          AI_VISION_ERROR_CODES.MODEL_UNAVAILABLE,
-          'AI service is currently unavailable. Please try again later.',
-          { service_error: healthCheck.message }
-        ),
-        {
-          request_id: requestId,
-          timestamp: new Date().toISOString(),
-          processing_time: Date.now() - startTime,
-        }
-      );
-
-      return NextResponse.json(response, { status: 503 });
-    }
-
-    // Check if model is available
-    const isModelAvailable = await ollamaClient.isModelAvailable();
-    if (!isModelAvailable) {
-      const response = createErrorResponse(
-        createErrorDetails(
-          AI_VISION_ERROR_CODES.MODEL_UNAVAILABLE,
-          'Qwen2.5-VL model is not available. Please ensure the model is installed.',
-          { model: ollamaClient.getConfig().model }
-        ),
-        {
-          request_id: requestId,
-          timestamp: new Date().toISOString(),
-          processing_time: Date.now() - startTime,
-        }
-      );
-
-      return NextResponse.json(response, { status: 503 });
-    }
-
-    // Parse multipart form data
-    const formData = await request.formData();
-    const imageFile = formData.get('image') as File;
-    const customPrompt = formData.get('custom_prompt') as string | null;
-    const temperatureStr = formData.get('temperature') as string | null;
-    const maxTokensStr = formData.get('max_tokens') as string | null;
-    const enhanceImageStr = formData.get('enhance_image') as string | null;
-
-    // Validate image file
-    if (!imageFile) {
-      const response = createErrorResponse(
-        createErrorDetails(
-          AI_VISION_ERROR_CODES.INVALID_IMAGE,
-          'No image file provided. Please upload a Romanian ID image.'
-        ),
-        {
-          request_id: requestId,
-          timestamp: new Date().toISOString(),
-          processing_time: Date.now() - startTime,
-        }
-      );
-
-      return NextResponse.json(response, { status: 400 });
-    }
-
-    // Validate image for AI processing
-    const validationStartTime = Date.now();
-    const validation = await validateImageForAI(imageFile);
-    const validationTime = Date.now() - validationStartTime;
-
-    if (!validation.isValid) {
-      const response = createErrorResponse(
-        createErrorDetails(
-          validation.errorCode || AI_VISION_ERROR_CODES.INVALID_IMAGE,
-          validation.errorMessage || 'Image validation failed',
-          {
-            validation_details: validation.details,
-            file_size: validation.fileSize,
-            mime_type: validation.mimeType,
-          }
-        ),
-        {
-          request_id: requestId,
-          timestamp: new Date().toISOString(),
-          processing_time: Date.now() - startTime,
-        }
-      );
-
-      return NextResponse.json(response, { status: 400 });
-    }
-
-    // Estimate processing time
-    const estimatedTime = estimateProcessingTime(
-      imageFile,
-      validation.dimensions
-    );
-    console.log(
-      `[AI Vision OCR] Estimated processing time: ${estimatedTime}ms`
-    );
-
-    // Process image for AI
-    const preprocessingStartTime = Date.now();
-    const imageProcessingResult = await optimizeForRomanianID(imageFile);
-    const preprocessingTime = Date.now() - preprocessingStartTime;
-
-    // Parse processing options
-    const processingOptions: QwenVisionOptions = {
-      enhance_image: enhanceImageStr === 'true',
-      enableRomanianEnhancements: true,
-      enableValidation: true,
-      promptContext: {
-        imageQuality: 'good', // Could be determined from image analysis
-      },
+async function callOllamaAPI(
+  base64Image: string,
+  options: {
+    temperature?: number;
+    max_tokens?: number;
+  } = {}
+): Promise<{ result?: RomanianIDExtractionResult; error?: string }> {
+  // First check if Ollama is running
+  const ollamaRunning = await checkOllamaStatus();
+  if (!ollamaRunning) {
+    return {
+      error:
+        'Ollama service is not running or not accessible. Please start Ollama and try again.',
     };
+  }
 
-    if (temperatureStr) {
-      processingOptions.temperature = parseFloat(temperatureStr);
+  const prompt = createExtractionPrompt();
+  const startTime = Date.now();
+
+  try {
+    // Try OpenAI-compatible endpoint
+    console.log('Calling Ollama API via OpenAI-compatible endpoint...');
+    const response = await fetch(`${OLLAMA_BASE_URL}/v1/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer ollama', // Required but ignored
+      },
+      body: JSON.stringify({
+        model: OLLAMA_MODEL,
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: prompt },
+              {
+                type: 'image_url',
+                image_url: {
+                  url: `data:image/jpeg;base64,${base64Image}`,
+                },
+              },
+            ],
+          },
+        ],
+        temperature: options.temperature || 0.0,
+        max_tokens: options.max_tokens || 4000,
+      }),
+    });
+
+    if (!response.ok) {
+      console.warn(
+        `OpenAI endpoint failed with status ${response.status}, trying native Ollama API`
+      );
+      return await callOllamaNativeAPI(base64Image, options);
     }
-    if (maxTokensStr) {
-      processingOptions.max_tokens = parseInt(maxTokensStr, 10);
+
+    const data = await response.json();
+
+    // Process response content
+    const content = data.choices?.[0]?.message?.content;
+    if (!content) {
+      console.error(
+        'No content returned from AI model. Full response:',
+        JSON.stringify(data)
+      );
+      return { error: 'No content returned from AI model' };
     }
-    if (customPrompt) {
-      processingOptions.custom_prompt = customPrompt;
+
+    // Log the raw content for debugging
+    console.log('Raw content from model:', content);
+
+    // Handle markdown-formatted JSON responses
+    let jsonContent = content;
+
+    // Extract JSON from markdown code blocks if present
+    const jsonMatch = jsonContent.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    if (jsonMatch) {
+      jsonContent = jsonMatch[1];
+      console.log('Extracted JSON from markdown:', jsonContent);
     }
 
-    // Process the image with Qwen vision model using enhanced prompting
-    const processingResult = await processWithRetry(
-      imageProcessingResult.base64,
-      processingOptions,
-      2 // Max retries
-    );
+    // Clean up any remaining markdown artifacts
+    jsonContent = jsonContent.trim();
+    if (jsonContent.startsWith('```')) {
+      jsonContent = jsonContent
+        .replace(/^```(?:json)?\s*/, '')
+        .replace(/\s*```$/, '');
+      console.log('Cleaned up markdown artifacts:', jsonContent);
+    }
 
-    const totalTime = Date.now() - startTime;
+    try {
+      console.log('Attempting to parse JSON...');
 
-    if (!processingResult.success) {
-      const errorMetadata: Partial<ResponseMetadata> = {
-        request_id: requestId,
-        timestamp: new Date().toISOString(),
-        processing_time: totalTime,
+      // Check if the content is not in JSON format
+      if (!jsonContent.trim().startsWith('{')) {
+        console.warn('Response is not in JSON format:', jsonContent);
+
+        // Create a minimal valid response with empty fields
+        return {
+          result: {
+            fields: {
+              nume: null,
+              prenume: null,
+              cnp: null,
+              data_nasterii: null,
+              locul_nasterii: null,
+              domiciliul: null,
+              seria_si_numarul: null,
+              data_eliberarii: null,
+              eliberat_de: null,
+              valabil_pana_la: null,
+            },
+            metadata: {
+              processing_time: Date.now() - startTime,
+              model: OLLAMA_MODEL,
+              image_quality: 'poor' as const,
+              warnings: [
+                'Model returned non-JSON response. Extraction failed.',
+                `Raw response: "${jsonContent.substring(0, 100)}${jsonContent.length > 100 ? '...' : ''}"`,
+              ],
+            },
+          },
+        };
+      }
+
+      const extractedData = JSON.parse(jsonContent);
+
+      // Log the raw extraction data for debugging
+      console.log(
+        'Raw extraction result:',
+        JSON.stringify(extractedData, null, 2)
+      );
+
+      console.log('Validating extraction data...');
+      const validation = processExtractedData(extractedData);
+
+      if (!validation.isValid) {
+        console.error('Validation failed:', validation.invalidReason);
+        return {
+          error: validation.invalidReason || 'Invalid extraction result',
+        };
+      }
+
+      // Add confidence fields if not present in the model response
+      if (!validation.data.confidence) {
+        validation.data.confidence = {};
+
+        // Create default confidence for each field
+        for (const field in validation.data.fields) {
+          validation.data.confidence[field] = {
+            score: 0.7,
+            level: 'medium',
+            reason: 'Default confidence level',
+          };
+        }
+      }
+
+      const result: RomanianIDExtractionResult = {
+        ...validation.data,
+        metadata: {
+          processing_time: Date.now() - startTime,
+          model: OLLAMA_MODEL,
+          image_quality: 'fair' as const,
+          warnings: [],
+        },
       };
 
-      if (processingResult.performance) {
-        errorMetadata.performance = createPerformanceMetrics(
-          processingResult.performance.model_time,
-          preprocessingTime + validationTime,
-          processingResult.performance.parsing_time
+      return { result };
+    } catch (parseError) {
+      return {
+        error: `Failed to parse JSON response: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`,
+      };
+    }
+  } catch (error) {
+    // If OpenAI endpoint fails completely, try native Ollama API
+    console.warn('OpenAI endpoint error, trying native API:', error);
+    return await callOllamaNativeAPI(base64Image, options);
+  }
+}
+
+/**
+ * Fallback to native Ollama API
+ */
+async function callOllamaNativeAPI(
+  base64Image: string,
+  options: {
+    temperature?: number;
+    max_tokens?: number;
+  } = {}
+): Promise<{ result?: RomanianIDExtractionResult; error?: string }> {
+  const prompt = createExtractionPrompt();
+  const startTime = Date.now();
+
+  try {
+    console.log('Calling Ollama API via native endpoint...');
+    const response = await fetch(`${OLLAMA_BASE_URL}/api/chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: OLLAMA_MODEL,
+        messages: [
+          {
+            role: 'user',
+            content: prompt,
+            images: [base64Image], // Ollama format: images array with base64 strings
+          },
+        ],
+        stream: false,
+        options: {
+          temperature: options.temperature || 0.0,
+          num_predict: options.max_tokens || 4000,
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'No error details');
+      console.error(
+        `Ollama API error: ${response.status}. Details:`,
+        errorText
+      );
+      return {
+        error: `Ollama API error: ${response.status}. Make sure Ollama is running.`,
+      };
+    }
+
+    const data = await response.json();
+    console.log('Native API response received:', JSON.stringify(data, null, 2));
+
+    // Check for API errors
+    if (data.error) {
+      console.error(`Ollama error:`, data.error);
+      return { error: `Ollama error: ${data.error}` };
+    }
+
+    const content = data.message?.content;
+
+    if (!content) {
+      console.error(
+        'No content received from Ollama. Full response:',
+        JSON.stringify(data)
+      );
+      return { error: 'No content received from Ollama' };
+    }
+
+    console.log('Raw content from model (native API):', content);
+
+    // Handle markdown-formatted JSON responses
+    let jsonContent = content;
+
+    // Extract JSON from markdown code blocks if present
+    const jsonMatch = jsonContent.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    if (jsonMatch) {
+      jsonContent = jsonMatch[1];
+      console.log('Extracted JSON from markdown (native API):', jsonContent);
+    }
+
+    // Clean up any remaining markdown artifacts
+    jsonContent = jsonContent.trim();
+    if (jsonContent.startsWith('```')) {
+      jsonContent = jsonContent
+        .replace(/^```(?:json)?\s*/, '')
+        .replace(/\s*```$/, '');
+      console.log('Cleaned up markdown artifacts (native API):', jsonContent);
+    }
+
+    try {
+      console.log('Attempting to parse JSON (native API)...');
+
+      // Check if the content is not in JSON format
+      if (!jsonContent.trim().startsWith('{')) {
+        console.warn('Response is not in JSON format:', jsonContent);
+
+        // Create a minimal valid response with empty fields
+        return {
+          result: {
+            fields: {
+              nume: null,
+              prenume: null,
+              cnp: null,
+              data_nasterii: null,
+              locul_nasterii: null,
+              domiciliul: null,
+              seria_si_numarul: null,
+              data_eliberarii: null,
+              eliberat_de: null,
+              valabil_pana_la: null,
+            },
+            metadata: {
+              processing_time: Date.now() - startTime,
+              model: OLLAMA_MODEL,
+              image_quality: 'poor' as const,
+              warnings: [
+                'Model returned non-JSON response. Extraction failed.',
+                `Raw response: "${jsonContent.substring(0, 100)}${jsonContent.length > 100 ? '...' : ''}"`,
+              ],
+            },
+          },
+        };
+      }
+
+      const extractedData = JSON.parse(jsonContent);
+
+      // Log the raw extraction data for debugging
+      console.log(
+        'Raw extraction result (native API):',
+        JSON.stringify(extractedData, null, 2)
+      );
+
+      console.log('Validating extraction data (native API)...');
+      const validation = processExtractedData(extractedData);
+
+      if (!validation.isValid) {
+        console.error(
+          'Validation failed (native API):',
+          validation.invalidReason
+        );
+        return {
+          error: validation.invalidReason || 'Invalid extraction result',
+        };
+      }
+
+      // Add confidence fields if not present in the model response
+      if (!validation.data.confidence) {
+        validation.data.confidence = {};
+
+        // Create default confidence for each field
+        for (const field in validation.data.fields) {
+          validation.data.confidence[field] = {
+            score: 0.7,
+            level: 'medium',
+            reason: 'Default confidence level',
+          };
+        }
+      }
+
+      const result: RomanianIDExtractionResult = {
+        ...validation.data,
+        metadata: {
+          processing_time: Date.now() - startTime,
+          model: OLLAMA_MODEL,
+          image_quality: 'fair' as const,
+          warnings: [],
+        },
+      };
+
+      return { result };
+    } catch (parseError) {
+      console.error(
+        'JSON parse error (native API):',
+        parseError,
+        'Content:',
+        jsonContent
+      );
+      return {
+        error: `Failed to parse JSON response: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`,
+      };
+    }
+  } catch (error) {
+    console.error('Ollama processing failed (native API):', error);
+    return {
+      error: `Ollama processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+    };
+  }
+}
+
+/**
+ * Main API handler
+ */
+export async function POST(request: NextRequest) {
+  const startTime = Date.now();
+  const requestId = generateRequestId();
+
+  try {
+    // Parse form data
+    const formData = await request.formData();
+    const image = formData.get('image') as File;
+
+    if (!image) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: 'INVALID_IMAGE',
+            message: 'No image file provided',
+          },
+          metadata: {
+            request_id: requestId,
+            timestamp: new Date().toISOString(),
+            processing_time: Date.now() - startTime,
+          },
+        } as AIVisionOCRResponse,
+        { status: 400 }
+      );
+    }
+
+    // Validate image
+    if (!image.type.startsWith('image/')) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: 'UNSUPPORTED_FORMAT',
+            message: 'File must be an image',
+          },
+          metadata: {
+            request_id: requestId,
+            timestamp: new Date().toISOString(),
+            processing_time: Date.now() - startTime,
+          },
+        } as AIVisionOCRResponse,
+        { status: 400 }
+      );
+    }
+
+    // Check file size (10MB limit)
+    if (image.size > 10 * 1024 * 1024) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: 'IMAGE_TOO_LARGE',
+            message: 'Image file too large (max 10MB)',
+          },
+          metadata: {
+            request_id: requestId,
+            timestamp: new Date().toISOString(),
+            processing_time: Date.now() - startTime,
+          },
+        } as AIVisionOCRResponse,
+        { status: 400 }
+      );
+    }
+
+    // Get options from form data
+    const temperature = formData.get('temperature');
+    const maxTokens = formData.get('max_tokens');
+    const enhanceImage = formData.get('enhance_image');
+
+    const options = {
+      temperature: temperature ? parseFloat(temperature as string) : 0.1,
+      max_tokens: maxTokens ? parseInt(maxTokens as string) : 2000,
+      enhance_image: enhanceImage ? enhanceImage === 'true' : true, // Default to true if not specified
+    };
+
+    // Process with Ollama
+    try {
+      const base64Image = await fileToBase64(image);
+      // Apply additional image preprocessing for better OCR results
+      const processedImage = await preprocessImage(
+        base64Image,
+        options.enhance_image
+      );
+      const { result, error } = await callOllamaAPI(processedImage, options);
+
+      if (error || !result) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: {
+              code: 'EXTRACTION_FAILED',
+              message: error || 'Failed to extract data from image',
+              details: error?.includes('Ollama')
+                ? {
+                    reason:
+                      'Make sure Ollama is running and the correct model is installed. Run "ollama list" to check available models.',
+                  }
+                : undefined,
+            },
+            metadata: {
+              request_id: requestId,
+              timestamp: new Date().toISOString(),
+              processing_time: Date.now() - startTime,
+            },
+          } as AIVisionOCRResponse,
+          { status: 422 }
         );
       }
 
-      const response = createErrorResponse(
-        createErrorDetails(
-          processingResult.error?.code ||
-            AI_VISION_ERROR_CODES.EXTRACTION_FAILED,
-          processingResult.error?.message ||
-            'Failed to extract Romanian ID data',
-          {
-            qwen_error: processingResult.error?.details,
-            raw_response: processingResult.raw_response?.substring(0, 500),
-            performance: processingResult.performance,
-          }
-        ),
-        errorMetadata
-      );
+      // Update processing time
+      result.metadata.processing_time = Date.now() - startTime;
 
-      return NextResponse.json(response, { status: 422 });
-    }
-
-    // Validate extraction result
-    if (!processingResult.data) {
-      const response = createErrorResponse(
-        createErrorDetails(
-          AI_VISION_ERROR_CODES.EXTRACTION_FAILED,
-          'No data extracted from the Romanian ID image'
-        ),
-        {
+      const response: AIVisionOCRResponse = {
+        success: true,
+        data: result,
+        metadata: {
           request_id: requestId,
           timestamp: new Date().toISOString(),
-          processing_time: totalTime,
-        }
-      );
+          processing_time: Date.now() - startTime,
+        },
+      };
 
-      return NextResponse.json(response, { status: 422 });
-    }
+      return NextResponse.json(response);
+    } catch (ollamaError) {
+      console.error('Ollama AI processing failed:', ollamaError);
 
-    // Validate response data structure
-    const dataValidation = validateResponseData(processingResult.data);
-    if (!dataValidation.isValid) {
-      console.warn(
-        '[AI Vision OCR] Response validation issues:',
-        dataValidation.issues
-      );
-    }
+      // Return proper error when AI processing fails
+      const errorMessage =
+        ollamaError instanceof Error
+          ? ollamaError.message
+          : 'AI processing service encountered an error';
 
-    // Sanitize response data
-    const sanitizedData = sanitizeResponseData(processingResult.data);
-
-    // Create successful response
-    const successMetadata: ResponseMetadata = {
-      request_id: requestId,
-      timestamp: new Date().toISOString(),
-      processing_time: totalTime,
-      performance: createPerformanceMetrics(
-        processingResult.performance.model_time,
-        preprocessingTime + validationTime,
-        processingResult.performance.parsing_time
-      ),
-    };
-
-    const response = createSuccessResponse(sanitizedData, successMetadata);
-
-    // Log successful response
-    const userAgent = request.headers.get('user-agent');
-    const logInfo: { fileSize: number; userAgent?: string } = {
-      fileSize: imageFile.size,
-    };
-    if (userAgent) {
-      logInfo.userAgent = userAgent;
-    }
-
-    logResponse(response, logInfo);
-
-    return NextResponse.json(response, { status: 200 });
-  } catch (error) {
-    console.error('[AI Vision OCR] Processing error:', error);
-
-    const response = createErrorResponse(
-      createErrorDetails(
-        AI_VISION_ERROR_CODES.INTERNAL_ERROR,
-        'An unexpected error occurred during processing',
+      return NextResponse.json(
         {
-          error: error instanceof Error ? error.message : 'Unknown error',
-        }
-      ),
-      {
+          success: false,
+          error: {
+            code: 'AI_SERVICE_UNAVAILABLE',
+            message: errorMessage,
+          },
+          metadata: {
+            request_id: requestId,
+            timestamp: new Date().toISOString(),
+            processing_time: Date.now() - startTime,
+          },
+        } as AIVisionOCRResponse,
+        { status: 503 }
+      );
+    }
+  } catch (error) {
+    console.error('Request processing failed:', error);
+
+    const response: AIVisionOCRResponse = {
+      success: false,
+      error: {
+        code: 'INTERNAL_ERROR',
+        message:
+          error instanceof Error ? error.message : 'Unknown error occurred',
+      },
+      metadata: {
         request_id: requestId,
         timestamp: new Date().toISOString(),
         processing_time: Date.now() - startTime,
-      }
-    );
+      },
+    };
 
     return NextResponse.json(response, { status: 500 });
   }
 }
 
 /**
- * GET /api/ai-vision-ocr
- * Returns API information and health status
+ * Health check endpoint
  */
 export async function GET(): Promise<NextResponse> {
+  // Test Ollama connection
+  let ollamaStatus = 'unknown';
+  let availableModels: string[] = [];
+
   try {
-    // Check service health
-    const healthCheck = await ollamaClient.healthCheck();
-    const isModelAvailable = await ollamaClient.isModelAvailable();
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-    const status =
-      healthCheck.status === 'ok' && isModelAvailable ? 'healthy' : 'unhealthy';
-
-    const info = {
-      service: 'AI Vision OCR for Romanian ID Processing',
-      version: '1.0.0',
-      status,
-      model: ollamaClient.getConfig().model,
-      capabilities: [
-        'Romanian ID field extraction',
-        'Image preprocessing and optimization',
-        'Confidence scoring',
-        'GDPR-compliant local processing',
-      ],
-      supported_formats: [
-        'image/jpeg',
-        'image/png',
-        'image/webp',
-        'image/heic',
-      ],
-      max_file_size: '10MB',
-      max_processing_time: '8 seconds',
-      active_requests: activeRequests,
-      timestamp: new Date().toISOString(),
-    };
-
-    return NextResponse.json(info, {
-      status: status === 'healthy' ? 200 : 503,
+    const response = await fetch(`${OLLAMA_BASE_URL}/api/tags`, {
+      method: 'GET',
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
+
+    if (response.ok) {
+      const data = await response.json();
+      ollamaStatus = 'connected';
+      availableModels = data.models?.map((m: any) => m.name) || [];
+    } else {
+      ollamaStatus = 'error';
+    }
   } catch (error) {
-    return NextResponse.json(
-      {
-        service: 'AI Vision OCR for Romanian ID Processing',
-        status: 'error',
-        error: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: new Date().toISOString(),
-      },
-      { status: 500 }
+    ollamaStatus = 'unavailable';
+  }
+
+  return NextResponse.json({
+    status: 'ok',
+    service: 'AI Vision OCR',
+    environment: process.env.NODE_ENV || 'development',
+    timestamp: new Date().toISOString(),
+    ollama: {
+      status: ollamaStatus,
+      url: OLLAMA_BASE_URL,
+      model: OLLAMA_MODEL,
+      available_models: availableModels,
+      model_available: availableModels.includes(OLLAMA_MODEL),
+    },
+  });
+}
+
+/**
+ * Apply preprocessing to image before sending to AI
+ * This version is server-compatible and doesn't use browser APIs
+ */
+async function preprocessImage(
+  base64Image: string,
+  enhance: boolean = true
+): Promise<string> {
+  if (!enhance) {
+    console.log('Image preprocessing skipped (enhance=false)');
+    return base64Image;
+  }
+
+  try {
+    // For server-side, we need to ensure the base64 string is properly formatted
+    // Sometimes the base64 may include the data URL prefix, which we need to remove
+    let cleanBase64 = base64Image;
+
+    // Remove data URL prefix if present
+    if (cleanBase64.includes('base64,')) {
+      cleanBase64 = cleanBase64.split('base64,')[1] || cleanBase64;
+      console.log('Removed data URL prefix from base64 image');
+    }
+
+    // Verify that the base64 string is valid
+    try {
+      Buffer.from(cleanBase64, 'base64');
+      console.log('Base64 validation successful');
+    } catch (e) {
+      console.warn('Invalid base64 string:', e);
+      return base64Image; // Return original if invalid
+    }
+
+    console.log(
+      'Image preprocessing: using original image (server-side compatible mode)'
     );
+    return cleanBase64;
+  } catch (error) {
+    console.warn('Image preprocessing failed:', error);
+    return base64Image; // Return original if processing fails
   }
 }

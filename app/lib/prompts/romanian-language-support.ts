@@ -356,91 +356,152 @@ ROMANIAN TEXT PROCESSING INSTRUCTIONS:
 }
 
 /**
- * Post-process extracted text with Romanian language corrections
+ * Post-process Romanian text with field-specific processing
  */
 export function postProcessRomanianText(
   text: string,
-  fieldType: 'name' | 'address' | 'city' | 'authority' | 'general'
+  fieldType:
+    | 'surname'
+    | 'given_name'
+    | 'address'
+    | 'city'
+    | 'authority'
+    | 'general'
 ): string {
+  if (!text) return text;
   let processed = text.trim();
 
-  // Apply field-specific processing
   switch (fieldType) {
-    case 'name':
+    case 'surname':
+    case 'given_name':
+      processed = processed.toUpperCase();
       processed = restoreNameDiacritics(processed);
-      break;
-    case 'city':
-      processed = restoreCityDiacritics(processed);
       break;
     case 'address':
       processed = restoreAddressDiacritics(processed);
       break;
+    case 'city':
+      processed = restoreCityDiacritics(processed);
+      break;
     case 'authority':
-      // Authority names are usually standardized
-      processed = processed.toUpperCase();
+      processed = processed.replace(/\bSPCLEP\b/g, 'SPCLEP');
       break;
     default:
-      processed = restoreDiacritics(processed);
+      // General processing
+      break;
   }
-
-  // Clean up spacing
-  processed = processed.replace(/\s+/g, ' ').trim();
 
   return processed;
 }
 
 /**
- * Calculate confidence score for Romanian text recognition
+ * Calculate confidence score for Romanian text based on field type
  */
 export function calculateRomanianConfidence(
   text: string,
-  fieldType: 'name' | 'address' | 'city' | 'authority' | 'general'
+  fieldType:
+    | 'surname'
+    | 'given_name'
+    | 'address'
+    | 'city'
+    | 'authority'
+    | 'general'
 ): number {
-  let confidence = 1.0;
+  if (!text) return 0;
 
-  // Check for proper diacritic usage
-  const validation = validateRomanianText(text);
-  confidence *= validation.confidence;
+  const normalizedText = text.trim().toUpperCase();
+  let confidence = 0.5; // Default medium confidence
 
-  // Field-specific confidence adjustments
   switch (fieldType) {
-    case 'name': {
-      // Check against common Romanian names
-      const hasCommonName =
-        ROMANIAN_PATTERNS.commonSurnames.some(name => text.includes(name)) ||
-        ROMANIAN_PATTERNS.commonFirstNames.some(name => text.includes(name));
-      if (hasCommonName) confidence *= 1.1;
+    case 'surname': {
+      // Check if it's a common Romanian surname
+      if (ROMANIAN_PATTERNS.commonSurnames.includes(normalizedText)) {
+        confidence = 0.9;
+      } else if (
+        ROMANIAN_PATTERNS.commonSurnames.some(name =>
+          normalizedText.includes(name)
+        )
+      ) {
+        confidence = 0.8;
+      }
+
+      // Check for proper diacritics in Romanian names
+      if (/[ȘȚĂÂÎ]/.test(normalizedText)) {
+        confidence += 0.1;
+      }
+
+      // Penalize non-Romanian characters
+      if (/[WXYZ]/.test(normalizedText)) {
+        confidence -= 0.1;
+      }
       break;
     }
 
-    case 'city': {
-      // Check against major Romanian cities
-      const hasKnownCity = ROMANIAN_PATTERNS.majorCities.some(city =>
-        text.includes(city)
-      );
-      if (hasKnownCity) confidence *= 1.2;
+    case 'given_name': {
+      // Check if it's a common Romanian given name
+      if (ROMANIAN_PATTERNS.commonFirstNames.includes(normalizedText)) {
+        confidence = 0.9;
+      } else if (
+        ROMANIAN_PATTERNS.commonFirstNames.some(name =>
+          normalizedText.includes(name)
+        )
+      ) {
+        confidence = 0.8;
+      }
+
+      // Check for proper diacritics in Romanian names
+      if (/[ȘȚĂÂÎ]/.test(normalizedText)) {
+        confidence += 0.1;
+      }
+
+      // Penalize non-Romanian characters
+      if (/[WXYZ]/.test(normalizedText)) {
+        confidence -= 0.1;
+      }
       break;
     }
 
-    case 'address': {
-      // Check for address abbreviations
-      const hasAddressPattern = ROMANIAN_PATTERNS.addressAbbreviations.some(
-        abbr => text.includes(abbr)
-      );
-      if (hasAddressPattern) confidence *= 1.1;
+    case 'address':
+      // Check for common Romanian address patterns
+      if (
+        ROMANIAN_PATTERNS.addressAbbreviations.some(abbr =>
+          normalizedText.includes(abbr)
+        )
+      ) {
+        confidence = 0.7;
+      }
       break;
-    }
 
-    case 'authority': {
+    case 'city':
+      // Check if it's a major Romanian city
+      if (ROMANIAN_PATTERNS.majorCities.includes(normalizedText)) {
+        confidence = 0.9;
+      } else if (
+        ROMANIAN_PATTERNS.majorCities.some(city =>
+          normalizedText.includes(city)
+        )
+      ) {
+        confidence = 0.7;
+      }
+      break;
+
+    case 'authority':
       // Check for authority patterns
-      const hasAuthorityPattern = ROMANIAN_PATTERNS.authorityPatterns.some(
-        pattern => text.includes(pattern)
-      );
-      if (hasAuthorityPattern) confidence *= 1.2;
+      if (
+        ROMANIAN_PATTERNS.authorityPatterns.some(pattern =>
+          normalizedText.includes(pattern)
+        )
+      ) {
+        confidence = 0.8;
+      }
       break;
-    }
+
+    default:
+      // General Romanian text validation
+      confidence = 0.5;
+      break;
   }
 
-  // Cap confidence at 1.0
-  return Math.min(confidence, 1.0);
+  // Cap confidence between 0 and 1
+  return Math.max(0, Math.min(1, confidence));
 }
