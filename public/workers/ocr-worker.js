@@ -1,28 +1,49 @@
 /**
  * OCR Web Worker
  * Handles Tesseract.js operations in a separate thread to prevent UI blocking
+ * Fixed version with proper local file loading and worker ID management
  */
 
-// Import Tesseract.js from CDN
-importScripts(
-  'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js'
-);
+/* global importScripts, Tesseract */
+
+// Import Tesseract.js from local files to avoid CSP issues
+try {
+  importScripts('/workers/tesseract/tesseract.min.js');
+} catch (error) {
+  console.error('Failed to load Tesseract.js:', error);
+  self.postMessage({
+    id: 'init_error',
+    type: 'ERROR',
+    payload: {
+      error: {
+        code: 'TESSERACT_LOAD_FAILED',
+        message: 'Failed to load Tesseract.js library',
+        details: error.toString(),
+        recoverable: false,
+        timestamp: new Date(),
+      },
+    },
+    timestamp: Date.now(),
+  });
+}
 
 // Worker state
 let tesseractWorker = null;
 let isInitialized = false;
 let isProcessing = false;
 let currentLanguage = null;
+let assignedWorkerId = null; // Store the worker ID assigned by the manager
 let workerConfig = null;
 let ocrConfig = null;
 
 /**
- * Send message to main thread
+ * Send message to main thread with proper worker ID
  */
 function sendMessage(type, payload, messageId = null) {
   const message = {
     id:
       messageId ||
+      assignedWorkerId ||
       `worker_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     type: type,
     payload: payload,
@@ -87,7 +108,7 @@ function mapTesseractStatus(status) {
 }
 
 /**
- * Initialize Tesseract worker
+ * Initialize Tesseract worker with enhanced configuration
  */
 async function initializeWorker(language, config, ocrSettings) {
   try {
@@ -100,30 +121,34 @@ async function initializeWorker(language, config, ocrSettings) {
     workerConfig = config;
     ocrConfig = ocrSettings;
 
-    // Create Tesseract worker with configuration
+    // Enhanced Tesseract configuration for local files and CSP compliance
     const tesseractConfig = {
-      langPath: config.langPath,
-      gzip: config.gzip,
+      langPath: config.langPath || '/workers/tesseract/',
+      gzip: false, // Disable gzip for local files
+      workerPath: config.workerPath || '/workers/tesseract/worker.min.js',
+      corePath: config.corePath || '/workers/tesseract/tesseract-core.wasm.js',
+      // Disable blob URLs and CDN to avoid CSP issues
+      workerBlobURL: false,
+      cacheMethod: 'none',
     };
 
-    if (config.corePath) {
-      tesseractConfig.corePath = config.corePath;
-    }
+    // Create worker with enhanced configuration
+    tesseractWorker = await Tesseract.createWorker({
+      langPath: tesseractConfig.langPath,
+      gzip: tesseractConfig.gzip,
+      workerPath: tesseractConfig.workerPath,
+      corePath: tesseractConfig.corePath,
+      workerBlobURL: tesseractConfig.workerBlobURL,
+      cacheMethod: tesseractConfig.cacheMethod,
+    });
 
-    if (config.workerPath) {
-      tesseractConfig.workerPath = config.workerPath;
-    }
+    // Load language
+    await tesseractWorker.loadLanguage(language);
+    await tesseractWorker.initialize(language, ocrSettings.oem);
 
-    tesseractWorker = await Tesseract.createWorker(
-      language,
-      1,
-      tesseractConfig
-    );
-
-    // Configure OCR parameters
+    // Configure OCR parameters (only runtime-changeable parameters)
     await tesseractWorker.setParameters({
       tessedit_pageseg_mode: ocrSettings.psm,
-      tessedit_ocr_engine_mode: ocrSettings.oem,
       tessedit_char_whitelist: ocrSettings.tesseditCharWhitelist || '',
       tessedit_char_blacklist: ocrSettings.tesseditCharBlacklist || '',
       preserve_interword_spaces: ocrSettings.preserveInterwordSpaces
@@ -139,6 +164,7 @@ async function initializeWorker(language, config, ocrSettings) {
     });
   } catch (error) {
     isInitialized = false;
+    console.error('Worker initialization failed:', error);
     sendError(error);
     sendMessage('INITIALIZED', {
       success: false,
@@ -551,7 +577,17 @@ self.addEventListener('message', async event => {
   const { id, type, payload } = event.data;
 
   try {
+    // Store the worker ID if provided and not already set
+    if (id && !assignedWorkerId) {
+      assignedWorkerId = id;
+    }
+
     switch (type) {
+      case 'SET_WORKER_ID':
+        assignedWorkerId = payload.workerId;
+        sendMessage('WORKER_ID_SET', { workerId: assignedWorkerId });
+        break;
+
       case 'INITIALIZE':
         await initializeWorker(
           payload.language,
@@ -570,7 +606,7 @@ self.addEventListener('message', async event => {
         break;
 
       case 'TERMINATE':
-        await terminateWorker(payload?.force);
+        await terminateWorker();
         break;
 
       case 'GET_STATUS':

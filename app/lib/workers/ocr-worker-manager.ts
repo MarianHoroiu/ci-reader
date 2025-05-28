@@ -123,8 +123,8 @@ export class OCRWorkerManager {
     const workerId = `worker_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
     try {
-      // Create worker from public directory
-      const worker = new Worker('/workers/ocr-worker.js');
+      // Create worker from public directory (using absolute URL worker)
+      const worker = new Worker('/workers/ocr-worker-absolute.js');
 
       const workerState: WorkerState = {
         id: workerId,
@@ -140,6 +140,8 @@ export class OCRWorkerManager {
       // Set up worker event listeners
       this.setupWorkerEventListeners(workerState);
 
+      // Worker ID will be set via message ID in initialization
+
       // Initialize worker with configuration
       const initMessage = createWorkerMessage<InitializeWorkerMessage>(
         'INITIALIZE',
@@ -149,6 +151,7 @@ export class OCRWorkerManager {
           ocrConfig: tesseractConfig.getOCRConfig(),
         }
       );
+      initMessage.id = workerId;
 
       if (!safePostMessage(worker, initMessage)) {
         throw createCommunicationError(

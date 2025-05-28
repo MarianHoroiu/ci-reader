@@ -18,6 +18,16 @@ const nextConfig: NextConfig = {
     // Future experimental features can be added here
   },
 
+  // Tesseract.js external package configuration (Solution 2)
+  // Moved out of experimental in Next.js 15.3.2+
+  serverExternalPackages: ['tesseract.js'],
+
+  // Output file tracing for WASM files
+  // Moved out of experimental in Next.js 15.3.2+
+  outputFileTracingIncludes: {
+    '/api/**/*': ['./node_modules/**/*.wasm', './node_modules/**/*.proto'],
+  },
+
   // TypeScript configuration
   typescript: {
     // Type checking is handled by separate script
@@ -66,6 +76,28 @@ const nextConfig: NextConfig = {
         // Public static assets security headers
         source: '/icons/:path*',
         headers: getStaticAssetSecurityHeaders(),
+      },
+      {
+        // OCR Worker files security headers
+        source: '/workers/:path*',
+        headers: [
+          {
+            key: 'Content-Type',
+            value: 'application/javascript; charset=utf-8',
+          },
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=86400', // 24 hours
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'Cross-Origin-Resource-Policy',
+            value: 'same-origin',
+          },
+        ],
       },
       {
         // Favicon and other root static files

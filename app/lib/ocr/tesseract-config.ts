@@ -6,7 +6,6 @@
 import type {
   TesseractWorkerConfig,
   OCREngineConfig,
-  LoggerMessage,
   OCRError,
 } from './ocr-types';
 import {
@@ -16,11 +15,9 @@ import {
 } from './language-packs';
 import { ROMANIAN_ID_CHAR_WHITELIST } from '../constants/romanian-characters';
 
-// Tesseract.js CDN paths
-export const TESSERACT_CORE_PATH =
-  'https://unpkg.com/tesseract.js-core@v5.1.0/tesseract-core.wasm.js';
-export const TESSERACT_WORKER_PATH =
-  'https://unpkg.com/tesseract.js@v5.1.1/dist/worker.min.js';
+// Tesseract.js local paths (to avoid CSP issues)
+export const TESSERACT_CORE_PATH = '/workers/tesseract/tesseract-core.wasm.js';
+export const TESSERACT_WORKER_PATH = '/workers/tesseract/worker.min.js';
 
 // OCR Engine Modes (OEM)
 export const OCR_ENGINE_MODES = {
@@ -48,21 +45,16 @@ export const PAGE_SEGMENTATION_MODES = {
   RAW_LINE: 13, // Raw line. Treat the image as a single text line, bypassing hacks
 } as const;
 
-// Default Tesseract worker configuration
+// Default Tesseract worker configuration (enhanced for CSP compliance)
 export const DEFAULT_WORKER_CONFIG: TesseractWorkerConfig = {
   langPath: TESSDATA_PATH,
   gzip: false,
-  logger: (info: LoggerMessage) => {
-    console.log(`[Tesseract] ${info.status}: ${info.progress}%`);
-  },
-  errorHandler: (error: Error) => {
-    console.error('[Tesseract Error]:', error);
-  },
+  // Note: logger and errorHandler are handled in the worker itself
   corePath: TESSERACT_CORE_PATH,
   workerPath: TESSERACT_WORKER_PATH,
 };
 
-// Default OCR engine configuration for Romanian ID documents
+// Default OCR engine configuration for Romanian ID documents (enhanced)
 export const DEFAULT_OCR_CONFIG: OCREngineConfig = {
   languages: [DEFAULT_LANGUAGE_PACK],
   oem: OCR_ENGINE_MODES.NEURAL_NETS_LSTM_ONLY,

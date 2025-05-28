@@ -41,8 +41,8 @@ export const AVAILABLE_LANGUAGE_PACKS: Record<string, LanguagePackConfig> = {
 export const DEFAULT_LANGUAGE_PACK = 'ron';
 export const FALLBACK_LANGUAGE_PACK = 'eng';
 
-// Language pack storage paths
-export const TESSDATA_PATH = '/tessdata/';
+// Language pack storage paths (local files to avoid CSP issues)
+export const TESSDATA_PATH = '/workers/tesseract/';
 export const LANGUAGE_PACK_CACHE_KEY = 'tesseract_language_packs';
 
 /**

@@ -36,6 +36,12 @@ export function generateCSP(isDev: boolean = false, nonce?: string): string {
           ]
         : []),
     ],
+    'script-src-elem': [
+      "'self'",
+      "'unsafe-inline'",
+      // Allow local worker scripts
+      ...(isDev ? ["'unsafe-eval'", 'https://vercel.live'] : []),
+    ],
     'style-src': [
       "'self'",
       "'unsafe-inline'", // Required for CSS-in-JS and Tailwind
@@ -55,6 +61,8 @@ export function generateCSP(isDev: boolean = false, nonce?: string): string {
     'media-src': ["'self'", 'data:', 'blob:'],
     'connect-src': [
       "'self'",
+      'data:', // Allow data URLs for WASM loading (Tesseract.js requirement)
+      'blob:', // Allow blob URLs for worker communication
       // WebSocket connections for development
       ...(isDev
         ? ['ws://localhost:*', 'wss://localhost:*', 'https://vercel.live']
@@ -62,7 +70,8 @@ export function generateCSP(isDev: boolean = false, nonce?: string): string {
     ],
     'worker-src': [
       "'self'",
-      'blob:', // For service worker
+      'blob:', // For service worker and OCR workers
+      'data:', // For WASM workers
     ],
     'child-src': ["'self'", 'blob:'],
     'frame-src': ["'self'"],
