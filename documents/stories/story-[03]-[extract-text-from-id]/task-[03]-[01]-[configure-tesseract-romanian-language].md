@@ -1,8 +1,8 @@
-# Task [04]-[01]: Configure Tesseract.js with Romanian language pack
+# Task [03]-[01]: Configure Tesseract.js with Romanian language pack
 
 ## Parent Story
 
-Story [04]: Extract Text from ID
+Story [03]: Extract Text from ID
 
 ## Task Description
 
@@ -70,7 +70,7 @@ proper language configuration and character recognition for Romanian-specific ch
 
 ## Dependencies
 
-- Task [03]-[01]: File upload component must be completed for image input
+- Task [02]-[01]: File upload component must be completed for image input
 - Task [01]-[01]: Next.js 15 project foundation required
 
 ## Estimated Completion Time

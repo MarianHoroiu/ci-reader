@@ -1,8 +1,8 @@
-# Task [04]-[03]: Implement image preprocessing pipeline
+# Task [03]-[03]: Implement image preprocessing pipeline
 
 ## Parent Story
 
-Story [04]: Extract Text from ID
+Story [03]: Extract Text from ID
 
 ## Task Description
 
@@ -74,8 +74,8 @@ correction, and grayscale conversion to optimize images for better Tesseract.js 
 
 ## Dependencies
 
-- Task [04]-[01]: Tesseract.js configuration required for testing OCR improvement
-- Task [03]-[01]: File upload functionality needed for image input
+- Task [03]-[01]: Tesseract.js configuration required for testing OCR improvement
+- Task [02]-[01]: File upload functionality needed for image input
 
 ## Estimated Completion Time
 

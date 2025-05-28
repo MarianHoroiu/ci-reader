@@ -1,8 +1,8 @@
-# Task [04]-[04]: Create OCR progress tracking
+# Task [03]-[04]: Create OCR progress tracking
 
 ## Parent Story
 
-Story [04]: Extract Text from ID
+Story [03]: Extract Text from ID
 
 ## Task Description
 
@@ -72,8 +72,8 @@ indicators, and estimated time remaining display to enhance user experience duri
 
 ## Dependencies
 
-- Task [04]-[02]: Web Worker system must be implemented for progress reporting
-- Task [04]-[01]: Tesseract.js configuration needed for OCR operations
+- Task [03]-[02]: Web Worker system must be implemented for progress reporting
+- Task [03]-[01]: Tesseract.js configuration needed for OCR operations
 
 ## Estimated Completion Time
 

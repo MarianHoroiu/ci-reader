@@ -1,8 +1,8 @@
-# Story [04] - Extract Text from ID
+# Story [03] - Extract Text from ID
 
 ## 📋 Story Information
 
-**Story ID**: 04  
+**Story ID**: 03  
 **Epic**: Epic 2 - Document Processing Engine  
 **Sprint**: Sprint 2 (Week 2)  
 **Story Points**: 8  

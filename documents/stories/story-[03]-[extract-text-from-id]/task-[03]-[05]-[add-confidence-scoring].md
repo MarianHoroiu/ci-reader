@@ -1,8 +1,8 @@
-# Task [04]-[05]: Add confidence scoring for extracted text
+# Task [03]-[05]: Add confidence scoring for extracted text
 
 ## Parent Story
 
-Story [04]: Extract Text from ID
+Story [03]: Extract Text from ID
 
 ## Task Description
 
@@ -74,8 +74,8 @@ may need manual review.
 
 ## Dependencies
 
-- Task [04]-[01]: Tesseract.js configuration needed for base confidence data
-- Task [04]-[03]: Image preprocessing may affect confidence calculations
+- Task [03]-[01]: Tesseract.js configuration needed for base confidence data
+- Task [03]-[03]: Image preprocessing may affect confidence calculations
 
 ## Estimated Completion Time
 

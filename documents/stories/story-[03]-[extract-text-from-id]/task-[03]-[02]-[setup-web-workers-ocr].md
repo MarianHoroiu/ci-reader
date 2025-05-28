@@ -1,8 +1,8 @@
-# Task [04]-[02]: Set up Web Workers for OCR processing
+# Task [03]-[02]: Set up Web Workers for OCR processing
 
 ## Parent Story
 
-Story [04]: Extract Text from ID
+Story [03]: Extract Text from ID
 
 ## Task Description
 
@@ -70,7 +70,7 @@ while processing Romanian ID documents.
 
 ## Dependencies
 
-- Task [04]-[01]: Tesseract.js configuration must be completed
+- Task [03]-[01]: Tesseract.js configuration must be completed
 - Task [01]-[01]: Next.js 15 project foundation required
 
 ## Estimated Completion Time
