@@ -11,6 +11,13 @@ import type {
   AIVisionErrorCode,
 } from '@/lib/types/romanian-id-types';
 import { AI_VISION_ERROR_CODES } from '@/lib/types/romanian-id-types';
+import {
+  getOptimalPrompt,
+  buildContextualPrompt,
+  type PromptContext,
+} from '@/lib/prompts/romanian-id-prompts';
+import { enhancePromptWithRomanian } from '@/lib/prompts/romanian-language-support';
+import { validateExtraction } from '@/lib/prompts/prompt-validation';
 
 export interface QwenVisionOptions {
   /** Temperature for model generation (0-1) */
@@ -21,6 +28,12 @@ export interface QwenVisionOptions {
   custom_prompt?: string;
   /** Enable enhanced preprocessing */
   enhance_image?: boolean;
+  /** Prompt context for optimization */
+  promptContext?: PromptContext;
+  /** Enable Romanian language enhancements */
+  enableRomanianEnhancements?: boolean;
+  /** Enable prompt validation */
+  enableValidation?: boolean;
 }
 
 export interface QwenProcessingResult {
@@ -47,49 +60,10 @@ export interface QwenProcessingResult {
 /**
  * Default prompt optimized for Qwen2.5-VL-7B-Instruct
  */
-const DEFAULT_ROMANIAN_ID_PROMPT = `
-Analyze this Romanian ID document image carefully and extract all visible information.
-
-You are an expert at reading Romanian identity cards (Carte de Identitate). Extract the following fields if visible and legible:
-
-REQUIRED FIELDS:
-- nume: Full name (Nume și Prenume)
-- cnp: Personal Numeric Code (CNP) - 13 digits
-- data_nasterii: Date of birth (Data nașterii) - format DD.MM.YYYY
-- locul_nasterii: Place of birth (Locul nașterii)
-- domiciliul: Address/Domicile (Domiciliul)
-- seria_si_numarul: ID series and number (Seria și numărul)
-- data_eliberarii: Issue date (Data eliberării) - format DD.MM.YYYY
-- eliberat_de: Issuing authority (Eliberat de)
-- valabil_pana_la: Validity date (Valabil până la) - format DD.MM.YYYY
-
-INSTRUCTIONS:
-1. Look carefully at the image and identify text in Romanian
-2. Handle Romanian diacritics correctly (ă, â, î, ș, ț)
-3. If a field is not visible, unclear, or damaged, use null
-4. For dates, use DD.MM.YYYY format
-5. For CNP, ensure it's exactly 13 digits
-6. Return ONLY valid JSON with the exact field names above
-
-RESPONSE FORMAT:
-Return a valid JSON object with the extracted fields. Example:
-{
-  "nume": "POPESCU MARIA ELENA",
-  "cnp": "2850123456789",
-  "data_nasterii": "23.01.1985",
-  "locul_nasterii": "BUCUREȘTI",
-  "domiciliul": "STR. VICTORIEI NR. 15, BUCUREȘTI",
-  "seria_si_numarul": "RX 123456",
-  "data_eliberarii": "15.06.2020",
-  "eliberat_de": "SPCLEP BUCUREȘTI",
-  "valabil_pana_la": "15.06.2030"
-}
-
-Now analyze the image and extract the information:
-`;
+// const DEFAULT_ROMANIAN_ID_PROMPT = `...`; // Commented out - using new prompt system
 
 /**
- * Processes a Romanian ID image using Qwen2.5-VL model
+ * Processes a Romanian ID image using Qwen2.5-VL model with advanced prompting
  */
 export async function processRomanianIDWithQwen(
   imageBase64: string,
@@ -105,8 +79,29 @@ export async function processRomanianIDWithQwen(
       num_ctx: 4096, // Large context for document processing
     };
 
-    // Use custom prompt or default
-    const prompt = options.custom_prompt || DEFAULT_ROMANIAN_ID_PROMPT;
+    // Select optimal prompt based on context
+    let prompt: string;
+    if (options.custom_prompt) {
+      prompt = options.custom_prompt;
+    } else {
+      const promptContext: PromptContext = {
+        imageQuality: 'good', // Default assumption
+        previousAttempts: 0,
+        ...options.promptContext,
+      };
+
+      const template = getOptimalPrompt(promptContext);
+      prompt = buildContextualPrompt(template, promptContext);
+
+      // Enhance with Romanian language support if enabled
+      if (options.enableRomanianEnhancements !== false) {
+        prompt = enhancePromptWithRomanian(prompt);
+      }
+
+      // Update processing options based on template recommendations
+      processingOptions.temperature = template.temperature;
+      processingOptions.max_tokens = template.maxTokens;
+    }
 
     // Call Ollama model
     const modelStartTime = Date.now();
@@ -187,8 +182,27 @@ export async function processRomanianIDWithQwen(
         model: ollamaClient.getConfig().model,
         image_quality: assessImageQualityFromResponse(response.response),
         warnings: extractWarnings(response.response),
+        ...(options.enableValidation && {
+          validation: {
+            score: 0,
+            recommendations: [],
+            confidence: 0,
+          },
+        }),
       },
     };
+
+    // Optional validation
+    if (options.enableValidation) {
+      const validation = validateExtraction(extractionResult.fields);
+      if (extractionResult.metadata.validation) {
+        extractionResult.metadata.validation = {
+          score: validation.score,
+          recommendations: validation.recommendations,
+          confidence: validation.confidence.overall,
+        };
+      }
+    }
 
     return {
       success: true,
@@ -218,6 +232,69 @@ export async function processRomanianIDWithQwen(
       },
     };
   }
+}
+
+/**
+ * Process with retry logic and adaptive prompting
+ */
+export async function processWithRetry(
+  imageBase64: string,
+  options: QwenVisionOptions = {},
+  maxRetries: number = 2
+): Promise<QwenProcessingResult> {
+  let lastResult: QwenProcessingResult | null = null;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const promptContext: PromptContext = {
+      imageQuality: 'good',
+      previousAttempts: attempt,
+      ...options.promptContext,
+    };
+
+    // Adjust strategy based on previous attempts
+    if (attempt > 0 && lastResult) {
+      // Use more robust prompting for retries
+      if (lastResult.success && lastResult.data) {
+        const validation = validateExtraction(lastResult.data.fields);
+        if (validation.score < 0.6) {
+          promptContext.imageQuality = 'poor';
+        }
+      } else {
+        promptContext.imageQuality = 'poor';
+      }
+    }
+
+    const result = await processRomanianIDWithQwen(imageBase64, {
+      ...options,
+      promptContext,
+      enableValidation: true,
+    });
+
+    // Check if result is satisfactory
+    if (result.success && result.data) {
+      const validation = validateExtraction(result.data.fields);
+      if (validation.score >= 0.7 || attempt === maxRetries) {
+        return result;
+      }
+    }
+
+    lastResult = result;
+  }
+
+  return (
+    lastResult || {
+      success: false,
+      error: {
+        code: AI_VISION_ERROR_CODES.EXTRACTION_FAILED,
+        message: 'All retry attempts failed',
+      },
+      performance: {
+        total_time: 0,
+        model_time: 0,
+        parsing_time: 0,
+      },
+    }
+  );
 }
 
 /**

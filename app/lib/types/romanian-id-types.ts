@@ -53,6 +53,15 @@ export interface RomanianIDExtractionResult {
     image_quality: 'excellent' | 'good' | 'fair' | 'poor';
     /** Any warnings or issues during processing */
     warnings: string[];
+    /** Optional validation results */
+    validation?: {
+      /** Validation score (0-1) */
+      score: number;
+      /** Improvement recommendations */
+      recommendations: string[];
+      /** Validation confidence */
+      confidence: number;
+    };
   };
 }
 

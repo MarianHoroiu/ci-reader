@@ -11,7 +11,7 @@ import {
   estimateProcessingTime,
 } from '@/lib/ai/image-handler';
 import {
-  processRomanianIDWithQwen,
+  processWithRetry,
   type QwenVisionOptions,
 } from '@/lib/ai/qwen-vision-processor';
 import {
@@ -224,7 +224,14 @@ async function processRequest(
     const preprocessingTime = Date.now() - preprocessingStartTime;
 
     // Parse processing options
-    const processingOptions: QwenVisionOptions = {};
+    const processingOptions: QwenVisionOptions = {
+      enhance_image: enhanceImageStr === 'true',
+      enableRomanianEnhancements: true,
+      enableValidation: true,
+      promptContext: {
+        imageQuality: 'good', // Could be determined from image analysis
+      },
+    };
 
     if (temperatureStr) {
       processingOptions.temperature = parseFloat(temperatureStr);
@@ -235,39 +242,41 @@ async function processRequest(
     if (customPrompt) {
       processingOptions.custom_prompt = customPrompt;
     }
-    processingOptions.enhance_image = enhanceImageStr === 'true';
 
-    // Process with Qwen model
-    const qwenResult = await processRomanianIDWithQwen(
+    // Process the image with Qwen vision model using enhanced prompting
+    const processingResult = await processWithRetry(
       imageProcessingResult.base64,
-      processingOptions
+      processingOptions,
+      2 // Max retries
     );
 
     const totalTime = Date.now() - startTime;
 
-    if (!qwenResult.success) {
+    if (!processingResult.success) {
       const errorMetadata: Partial<ResponseMetadata> = {
         request_id: requestId,
         timestamp: new Date().toISOString(),
         processing_time: totalTime,
       };
 
-      if (qwenResult.performance) {
+      if (processingResult.performance) {
         errorMetadata.performance = createPerformanceMetrics(
-          qwenResult.performance.model_time,
+          processingResult.performance.model_time,
           preprocessingTime + validationTime,
-          qwenResult.performance.parsing_time
+          processingResult.performance.parsing_time
         );
       }
 
       const response = createErrorResponse(
         createErrorDetails(
-          qwenResult.error?.code || AI_VISION_ERROR_CODES.EXTRACTION_FAILED,
-          qwenResult.error?.message || 'Failed to extract Romanian ID data',
+          processingResult.error?.code ||
+            AI_VISION_ERROR_CODES.EXTRACTION_FAILED,
+          processingResult.error?.message ||
+            'Failed to extract Romanian ID data',
           {
-            qwen_error: qwenResult.error?.details,
-            raw_response: qwenResult.raw_response?.substring(0, 500),
-            performance: qwenResult.performance,
+            qwen_error: processingResult.error?.details,
+            raw_response: processingResult.raw_response?.substring(0, 500),
+            performance: processingResult.performance,
           }
         ),
         errorMetadata
@@ -277,7 +286,7 @@ async function processRequest(
     }
 
     // Validate extraction result
-    if (!qwenResult.data) {
+    if (!processingResult.data) {
       const response = createErrorResponse(
         createErrorDetails(
           AI_VISION_ERROR_CODES.EXTRACTION_FAILED,
@@ -294,7 +303,7 @@ async function processRequest(
     }
 
     // Validate response data structure
-    const dataValidation = validateResponseData(qwenResult.data);
+    const dataValidation = validateResponseData(processingResult.data);
     if (!dataValidation.isValid) {
       console.warn(
         '[AI Vision OCR] Response validation issues:',
@@ -303,7 +312,7 @@ async function processRequest(
     }
 
     // Sanitize response data
-    const sanitizedData = sanitizeResponseData(qwenResult.data);
+    const sanitizedData = sanitizeResponseData(processingResult.data);
 
     // Create successful response
     const successMetadata: ResponseMetadata = {
@@ -311,9 +320,9 @@ async function processRequest(
       timestamp: new Date().toISOString(),
       processing_time: totalTime,
       performance: createPerformanceMetrics(
-        qwenResult.performance.model_time,
+        processingResult.performance.model_time,
         preprocessingTime + validationTime,
-        qwenResult.performance.parsing_time
+        processingResult.performance.parsing_time
       ),
     };
 
