@@ -12,6 +12,7 @@ import type {
   OCRWorkerInstance,
   PreprocessingResult,
 } from './ocr-types';
+import { preprocessImage as preprocessImagePipeline } from '../image-processing';
 import { tesseractConfig } from './tesseract-config';
 import { languagePackManager, DEFAULT_LANGUAGE_PACK } from './language-packs';
 import {
@@ -312,85 +313,37 @@ export class OCREngine {
   }
 
   /**
-   * Preprocess image for better OCR accuracy
+   * Preprocess image for better OCR accuracy using the new preprocessing pipeline
    */
   private async preprocessImage(
     imageInput: string | File | ImageData | HTMLCanvasElement,
     options: OCRProcessingOptions
   ): Promise<PreprocessingResult> {
-    const startTime = Date.now();
-    const operations: string[] = [];
-
     try {
-      // Create canvas for image processing
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
+      // Use the new preprocessing pipeline
+      const result = await preprocessImagePipeline(imageInput, {
+        config: {
+          grayscale: { enabled: options.convertToGrayscale || true },
+          contrast: { enabled: options.enhanceContrast || true },
+          noiseReduction: { enabled: options.removeNoise || true },
+          rotationCorrection: { enabled: true },
+          brightness: { enabled: true, autoAdjust: true },
+          sharpening: { enabled: false }, // Disabled by default for OCR
+        },
+        outputFormat: 'png',
+        outputQuality: 1.0,
+      });
 
-      if (!ctx) {
-        throw new Error('Failed to get canvas context');
-      }
-
-      // Load image into canvas
-      let img: HTMLImageElement;
-      if (typeof imageInput === 'string') {
-        img = new Image();
-        img.src = imageInput;
-        await new Promise((resolve, reject) => {
-          img.onload = resolve;
-          img.onerror = reject;
-        });
-      } else if (imageInput instanceof File) {
-        img = new Image();
-        img.src = URL.createObjectURL(imageInput);
-        await new Promise((resolve, reject) => {
-          img.onload = resolve;
-          img.onerror = reject;
-        });
-      } else {
-        // Handle ImageData or HTMLCanvasElement
-        return {
-          processedImage: imageInput as ImageData | HTMLCanvasElement,
-          operations: ['no_preprocessing'],
-          qualityScore: 1.0,
-          processingTime: Date.now() - startTime,
-        };
-      }
-
-      canvas.width = img.width;
-      canvas.height = img.height;
-      ctx.drawImage(img, 0, 0);
-
-      // Apply preprocessing operations
-      if (options.convertToGrayscale) {
-        this.convertToGrayscale(ctx, canvas.width, canvas.height);
-        operations.push('grayscale');
-      }
-
-      if (options.enhanceContrast) {
-        this.enhanceContrast(ctx, canvas.width, canvas.height);
-        operations.push('contrast_enhancement');
-      }
-
-      if (options.removeNoise) {
-        this.removeNoise(ctx, canvas.width, canvas.height);
-        operations.push('noise_removal');
-      }
-
-      // Calculate quality score (simplified)
-      const qualityScore = this.calculateImageQuality(
-        ctx,
-        canvas.width,
-        canvas.height
-      );
-
+      // Convert the new result format to the legacy format for compatibility
       return {
-        processedImage: canvas,
-        operations,
-        qualityScore,
-        processingTime: Date.now() - startTime,
+        processedImage: result.processedImage,
+        operations: result.operations,
+        qualityScore: result.qualityMetrics.overall,
+        processingTime: result.processingTime,
       };
     } catch (error) {
       console.error('Image preprocessing failed:', error);
+      const startTime = Date.now();
       return {
         processedImage: imageInput,
         operations: ['preprocessing_failed'],
@@ -398,125 +351,6 @@ export class OCREngine {
         processingTime: Date.now() - startTime,
       };
     }
-  }
-
-  /**
-   * Convert image to grayscale
-   */
-  private convertToGrayscale(
-    ctx: CanvasRenderingContext2D,
-    width: number,
-    height: number
-  ): void {
-    const imageData = ctx.getImageData(0, 0, width, height);
-    const data = imageData.data;
-
-    for (let i = 0; i < data.length; i += 4) {
-      const gray = Math.round(
-        0.299 * (data[i] || 0) +
-          0.587 * (data[i + 1] || 0) +
-          0.114 * (data[i + 2] || 0)
-      );
-      data[i] = gray; // Red
-      data[i + 1] = gray; // Green
-      data[i + 2] = gray; // Blue
-      // Alpha channel (data[i + 3]) remains unchanged
-    }
-
-    ctx.putImageData(imageData, 0, 0);
-  }
-
-  /**
-   * Enhance image contrast
-   */
-  private enhanceContrast(
-    ctx: CanvasRenderingContext2D,
-    width: number,
-    height: number
-  ): void {
-    const imageData = ctx.getImageData(0, 0, width, height);
-    const data = imageData.data;
-    const factor = 1.5; // Contrast enhancement factor
-
-    for (let i = 0; i < data.length; i += 4) {
-      data[i] = Math.min(
-        255,
-        Math.max(0, factor * ((data[i] || 0) - 128) + 128)
-      ); // Red
-      data[i + 1] = Math.min(
-        255,
-        Math.max(0, factor * ((data[i + 1] || 0) - 128) + 128)
-      ); // Green
-      data[i + 2] = Math.min(
-        255,
-        Math.max(0, factor * ((data[i + 2] || 0) - 128) + 128)
-      ); // Blue
-    }
-
-    ctx.putImageData(imageData, 0, 0);
-  }
-
-  /**
-   * Remove noise from image
-   */
-  private removeNoise(
-    ctx: CanvasRenderingContext2D,
-    width: number,
-    height: number
-  ): void {
-    const imageData = ctx.getImageData(0, 0, width, height);
-    const data = imageData.data;
-    const newData = new Uint8ClampedArray(data);
-
-    // Simple median filter for noise removal
-    for (let y = 1; y < height - 1; y++) {
-      for (let x = 1; x < width - 1; x++) {
-        for (let c = 0; c < 3; c++) {
-          // RGB channels
-          const pixels = [];
-          for (let dy = -1; dy <= 1; dy++) {
-            for (let dx = -1; dx <= 1; dx++) {
-              const idx = ((y + dy) * width + (x + dx)) * 4 + c;
-              pixels.push(data[idx]);
-            }
-          }
-          pixels.sort((a, b) => (a || 0) - (b || 0));
-          const idx = (y * width + x) * 4 + c;
-          newData[idx] = pixels[4] || 0; // Median value
-        }
-      }
-    }
-
-    const newImageData = new ImageData(newData, width, height);
-    ctx.putImageData(newImageData, 0, 0);
-  }
-
-  /**
-   * Calculate image quality score
-   */
-  private calculateImageQuality(
-    ctx: CanvasRenderingContext2D,
-    width: number,
-    height: number
-  ): number {
-    const imageData = ctx.getImageData(0, 0, width, height);
-    const data = imageData.data;
-
-    let totalVariance = 0;
-    let pixelCount = 0;
-
-    // Calculate variance as a measure of image quality
-    for (let i = 0; i < data.length; i += 4) {
-      const gray =
-        0.299 * (data[i] || 0) +
-        0.587 * (data[i + 1] || 0) +
-        0.114 * (data[i + 2] || 0);
-      totalVariance += gray * gray;
-      pixelCount++;
-    }
-
-    const variance = totalVariance / pixelCount;
-    return Math.min(1.0, variance / 10000); // Normalize to 0-1 range
   }
 
   /**
