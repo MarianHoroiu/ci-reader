@@ -61,7 +61,8 @@ DOCUMENT ANALYSIS PROTOCOL:
 REQUIRED FIELDS EXTRACTION:
 Extract these exact fields with precise formatting:
 
-• nume: Full name (Nume și Prenume) - Usually in UPPERCASE, may contain diacritics
+• nume: Full name (Nume) - Usually in UPPERCASE, may contain diacritics, may contain hyphen, may contain multiple words
+• prenume: Full surname (Prenume) - Usually in UPPERCASE, may contain diacritics, may contain hyphen, may contain multiple words
 • cnp: Personal Numeric Code - Exactly 13 digits, no spaces or separators
 • data_nasterii: Birth date - Format: DD.MM.YYYY (e.g., 15.03.1985)
 • locul_nasterii: Birth place - City/locality name, may include county
@@ -127,8 +128,14 @@ FIELD-SPECIFIC EXTRACTION RULES:
 NUME (Full Name):
 - Extract complete name as printed (usually UPPERCASE)
 - Preserve all Romanian diacritics (ă, â, î, ș, ț)
-- Include all name components (first, middle, last names)
+- Include all name components
 - Handle compound names with hyphens
+
+PRENUME (Full Surname):
+- Extract complete surname as printed (usually UPPERCASE)
+- Preserve all Romanian diacritics (ă, â, î, ș, ț)
+- Include all surname components
+- Handle compound surnames with hyphens
 
 CNP (Personal Numeric Code):
 - Must be exactly 13 consecutive digits
@@ -168,6 +175,7 @@ Return ONLY the JSON object with extracted data. Use null for any field that can
 
 {
   "nume": null,
+  "prenume": null,
   "cnp": null,
   "data_nasterii": null,
   "locul_nasterii": null,
@@ -226,9 +234,10 @@ ROMANIAN TEXT RECOVERY:
 
 FIELD PRIORITIZATION (in order of importance):
 1. nume (name) - Most critical for identification
-2. cnp (personal code) - Unique identifier
-3. data_nasterii (birth date) - Core demographic data
-4. seria_si_numarul (ID number) - Document identifier
+2. prenume (surname) - Most critical for identification
+3. cnp (personal code) - Unique identifier
+4. data_nasterii (birth date) - Core demographic data
+5. seria_si_numarul (ID number) - Document identifier
 5. Other fields as clearly visible
 
 FORMAT VALIDATION:
@@ -242,6 +251,7 @@ Return JSON with only confidently extracted fields:
 
 {
   "nume": null,
+  "prenume": null,
   "cnp": null,
   "data_nasterii": null,
   "locul_nasterii": null,
@@ -294,6 +304,7 @@ Return JSON with all fields (use null for non-target fields if not clearly visib
 
 {
   "nume": null,
+  "prenume": null,
   "cnp": null,
   "data_nasterii": null,
   "locul_nasterii": null,
@@ -321,7 +332,8 @@ export const MULTI_SHOT_PROMPT: PromptTemplate = {
 
 EXAMPLE 1 - Standard Romanian ID:
 Document shows:
-- Name: "IONESCU ALEXANDRA MARIA"
+- Name: "IONESCU"
+- Surname: "ALEXANDRA MARIA"
 - CNP: "2950123456789"
 - Birth date: "12.01.1995"
 - Birth place: "CLUJ-NAPOCA"
@@ -333,7 +345,8 @@ Document shows:
 
 Correct extraction:
 {
-  "nume": "IONESCU ALEXANDRA MARIA",
+  "nume": "IONESCU",
+  "prenume": "ALEXANDRA MARIA",
   "cnp": "2950123456789",
   "data_nasterii": "12.01.1995",
   "locul_nasterii": "CLUJ-NAPOCA",
@@ -346,7 +359,8 @@ Correct extraction:
 
 EXAMPLE 2 - Romanian ID with diacritics:
 Document shows:
-- Name: "POPESCU ȘTEFAN CĂTĂLIN"
+- Name: "POPESCU"
+- Surname: "ȘTEFAN CĂTĂLIN"
 - CNP: "1850315123456"
 - Birth date: "15.03.1985"
 - Birth place: "BRAȘOV"
@@ -358,7 +372,8 @@ Document shows:
 
 Correct extraction:
 {
-  "nume": "POPESCU ȘTEFAN CĂTĂLIN",
+  "nume": "POPESCU",
+  "prenume": "ȘTEFAN CĂTĂLIN",
   "cnp": "1850315123456",
   "data_nasterii": "15.03.1985",
   "locul_nasterii": "BRAȘOV",
@@ -370,7 +385,7 @@ Correct extraction:
 }
 
 KEY PATTERNS LEARNED:
-1. Names are in UPPERCASE with preserved diacritics
+1. Names and surnames are in UPPERCASE with preserved diacritics
 2. CNP is always 13 consecutive digits
 3. Dates follow DD.MM.YYYY format strictly
 4. Addresses use standard abbreviations (STR., NR., BL., AP.)
@@ -391,6 +406,7 @@ Return ONLY the JSON object with extracted data:
 
 {
   "nume": null,
+  "prenume": null,
   "cnp": null,
   "data_nasterii": null,
   "locul_nasterii": null,
