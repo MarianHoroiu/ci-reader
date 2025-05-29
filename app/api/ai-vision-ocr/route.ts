@@ -163,6 +163,7 @@ LOCUL NAȘTERII (Birth Place):
 DOMICILIUL (Address):
 - Complete residential address
 - May include street, number, block, apartment, city
+- May split into multiple lines
 - Common locations: Near the "DOMICILIUL:" label on the ID
 
 SERIA (ID Series):
@@ -224,11 +225,12 @@ CRITICAL RULES:
 2. If you cannot see a value clearly, use null for that field, but NEVER use the string "null"
 3. EXTRACT ACTUAL TEXT from the document, not placeholders
 4. SPLIT the person's name into surname (nume) and given name (prenume) correctly
-5. DO NOT make up information - if you can't see it, use null
-6. Always preserve Romanian diacritics in text
-7. If no ID document is visible, set all fields to null and explain in overall_confidence
-8. DO NOT USE PLACEHOLDER TEXT OR EXAMPLES - extract only the real data from the image
-9. RESPOND ONLY WITH JSON - NO EXPLANATIONS BEFORE OR AFTER THE JSON`;
+5. The address may split into multiple lines, extract the full address
+6. DO NOT make up information - if you can't see it, use null
+7. Always preserve Romanian diacritics in text
+8. If no ID document is visible, set all fields to null and explain in overall_confidence.
+9. DO NOT USE PLACEHOLDER TEXT OR EXAMPLES - extract only the real data from the image
+10. RESPOND ONLY WITH JSON - NO EXPLANATIONS BEFORE OR AFTER THE JSON`;
 }
 
 /**

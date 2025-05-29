@@ -247,7 +247,7 @@ Extract the complete address (Domiciliul):
   * ET. (Etajul - Floor)
 - Maintain original formatting and diacritics
 - Include locality/city name
-- May span multiple lines
+- May span over multiple lines
 `,
   variations: [
     'STR. VICTORIEI NR. 25, BL. A1, AP. 15, BUCUREȘTI',

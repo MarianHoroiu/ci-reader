@@ -379,14 +379,14 @@ export default function FileUploadPage() {
         {!isProcessing && !result && uploadedFiles.length === 0 && (
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              Instrucțiuni de utilizare
+              Instrucțiuni de utilizare:
             </h2>
             <div className="space-y-4 text-gray-600">
               <div className="flex items-start">
                 <CheckCircle className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
                 <div>
                   <strong>Încărcați imaginea:</strong> Selectați o fotografie
-                  clară a buletinului de identitate românesc
+                  clară a cărții de identitate
                 </div>
               </div>
               <div className="flex items-start">
@@ -421,7 +421,8 @@ export default function FileUploadPage() {
                     Acest sistem folosește inteligența artificială pentru
                     extragerea datelor. Vă recomandăm să verificați întotdeauna
                     acuratețea informațiilor extrase înainte de a le utiliza în
-                    scopuri oficiale.
+                    scopuri oficiale. Aveți posibilitatea de a edita datele
+                    extrase înainte de export.
                   </p>
                 </div>
               </div>

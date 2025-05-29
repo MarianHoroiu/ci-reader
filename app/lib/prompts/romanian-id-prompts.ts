@@ -153,6 +153,7 @@ ADDRESSES (domiciliul):
 - Complete address including all components
 - Preserve Romanian address abbreviations (STR., NR., BL., AP., SC., ET.)
 - Include locality and postal information if present
+- May split into multiple lines
 - Maintain original formatting and diacritics
 
 SERIA (ID Series):
@@ -269,8 +270,8 @@ Return JSON with only confidently extracted fields:
   "seria": null,
   "numar": null,
   "data_eliberarii": null,
-  "eliberat_de": null,
   "valabil_pana_la": null
+  "eliberat_de": null,
 }
 
 Analyze the document and extract only clearly readable information:`,
@@ -324,8 +325,8 @@ Return JSON with all fields (use null for non-target fields if not clearly visib
   "seria": null,
   "numar": null,
   "data_eliberarii": null,
-  "eliberat_de": null,
   "valabil_pana_la": null
+  "eliberat_de": null,
 }
 
 Focus on the target fields and extract with maximum accuracy:`,
@@ -354,8 +355,8 @@ Document shows:
 - Series: "CJ"
 - Number: "123456"
 - Issue date: "15.06.2020"
-- Authority: "SPCLEP CLUJ"
 - Expiry: "15.06.2030"
+- Authority: "SPCLEP CLUJ"
 
 Correct extraction:
 {
@@ -368,8 +369,8 @@ Correct extraction:
   "seria": "CJ",
   "numar": "123456",
   "data_eliberarii": "15.06.2020",
-  "eliberat_de": "SPCLEP CLUJ",
   "valabil_pana_la": "15.06.2030"
+  "eliberat_de": "SPCLEP CLUJ",
 }
 
 EXAMPLE 2 - Romanian ID with diacritics:
@@ -397,15 +398,15 @@ Correct extraction:
   "seria": "BV",
   "numar": "789012",
   "data_eliberarii": "10.09.2019",
-  "eliberat_de": "SPCLEP BRAȘOV",
   "valabil_pana_la": "10.09.2029"
+  "eliberat_de": "SPCLEP BRAȘOV",
 }
 
 KEY PATTERNS LEARNED:
 1. Names and surnames are in UPPERCASE with preserved diacritics
 2. CNP is always 13 consecutive digits
 3. Dates follow DD.MM.YYYY format strictly
-4. Addresses use standard abbreviations (STR., NR., BL., AP.)
+4. Addresses use standard abbreviations (STR., NR., BL., AP.) and may split into multiple lines
 5. Series is the 2-letter in UPPRCASE
 6. Number is always 6 digits
 7. Authority follows "SPCLEP [Location]" pattern
@@ -432,8 +433,8 @@ Return ONLY the JSON object with extracted data:
   "seria": null,
   "numar": null,
   "data_eliberarii": null,
-  "eliberat_de": null,
   "valabil_pana_la": null
+  "eliberat_de": null,
 }
 
 Extract information following the learned patterns:`,
