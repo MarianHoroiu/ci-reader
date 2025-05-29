@@ -17,14 +17,16 @@ export interface RomanianIDFields {
   locul_nasterii: string | null;
   /** Address/Domicile (Domiciliul) */
   domiciliul: string | null;
-  /** ID series and number (Seria și numărul) */
-  seria_si_numarul: string | null;
+  /** ID series (Seria) */
+  seria: string | null;
+  /** ID number (Numărul) */
+  numar: string | null;
   /** Issue date (Data eliberării) */
   data_eliberarii: string | null;
-  /** Issuing authority (Eliberat de) */
-  eliberat_de: string | null;
   /** Validity date (Valabil până la) */
   valabil_pana_la: string | null;
+  /** Issuing authority (Eliberat de) */
+  eliberat_de: string | null;
 }
 
 // Romanian ID extraction result with confidence scores

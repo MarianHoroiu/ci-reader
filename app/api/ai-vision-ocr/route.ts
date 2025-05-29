@@ -44,6 +44,11 @@ function processExtractedData(data: any): {
     return { data, isValid: false, invalidReason: 'Missing fields object' };
   }
 
+  // If the model returned seria and numar but not seria_si_numarul, combine them
+  if (data.fields.seria && data.fields.numar && !data.fields.seria_si_numarul) {
+    data.fields.seria_si_numarul = `${data.fields.seria} ${data.fields.numar}`;
+  }
+
   // Add empty confidence object if not provided by the model
   if (!data.confidence) {
     data.confidence = {};
@@ -75,21 +80,16 @@ function processExtractedData(data: any): {
     'DD.MM.YYYY FORMAT',
     'EXTRACTED PLACE',
     'FULL ADDRESS',
-    'SERIES AND NUMBER',
+    'SERIES 2 LETTERS ONLY',
+    'NUMBER 6 DIGITS ONLY',
     'ISSUING AUTHORITY',
-    '[EXTRACTED SURNAME ONLY]',
-    '[EXTRACTED GIVEN NAME(S) ONLY]',
-    '[13 DIGITS WITH NO SPACES]',
-    '[DD.MM.YYYY FORMAT]',
-    '[EXTRACTED PLACE]',
-    '[FULL ADDRESS]',
-    '[SERIES AND NUMBER]',
-    '[ISSUING AUTHORITY]',
     'Surname',
     'Given name',
     'Birth date in DD.MM.YYYY format',
     'Place of birth',
     'Address/domicile',
+    'Series (e.g., XX)',
+    'Number (e.g., 123456)',
     'Series and number (e.g., XX 123456)',
     'Issue date in DD.MM.YYYY format',
     'Issuing authority',
@@ -165,9 +165,15 @@ DOMICILIUL (Address):
 - May include street, number, block, apartment, city
 - Common locations: Near the "DOMICILIUL:" label on the ID
 
-SERIA ȘI NUMĂRUL (ID Series and Number):
-- Format: Letters followed by space and numbers (e.g., "XX 123456")
-- Common locations: Near the "SERIA" and "NR." labels on the ID
+SERIA (ID Series):
+- Format: Letters only (usually 2 letters)
+- Common locations: Near the "SERIA" label on the ID
+- Examples: "XX", "AB", "CJ" (DO NOT USE THESE VALUES - extract the actual series)
+
+NUMĂRUL (ID Number):
+- Format: 6 digits with no spaces
+- Common locations: Near the "NR." label on the ID
+- Example: "123456" (DO NOT USE THIS VALUE - extract the actual number)
 
 DATA ELIBERĂRII (Issue Date):
 - Must be in DD.MM.YYYY format
@@ -200,7 +206,8 @@ YOU MUST RETURN ONLY JSON. NO TEXT BEFORE OR AFTER THE JSON. Return exactly this
     "data_nasterii": "[DD.MM.YYYY FORMAT]",
     "locul_nasterii": "[EXTRACTED PLACE]",
     "domiciliul": "[FULL ADDRESS]",
-    "seria_si_numarul": "[SERIES AND NUMBER]",
+    "seria": "[SERIES LETTERS ONLY]",
+    "numar": "[6 DIGITS]",
     "data_eliberarii": "[DD.MM.YYYY FORMAT]",
     "eliberat_de": "[ISSUING AUTHORITY]",
     "valabil_pana_la": "[DD.MM.YYYY FORMAT]"
@@ -355,10 +362,11 @@ async function callOllamaAPI(
               data_nasterii: null,
               locul_nasterii: null,
               domiciliul: null,
-              seria_si_numarul: null,
+              seria: null,
+              numar: null,
               data_eliberarii: null,
-              eliberat_de: null,
               valabil_pana_la: null,
+              eliberat_de: null,
             },
             metadata: {
               processing_time: Date.now() - startTime,
@@ -533,10 +541,11 @@ async function callOllamaNativeAPI(
               data_nasterii: null,
               locul_nasterii: null,
               domiciliul: null,
-              seria_si_numarul: null,
+              seria: null,
+              numar: null,
               data_eliberarii: null,
-              eliberat_de: null,
               valabil_pana_la: null,
+              eliberat_de: null,
             },
             metadata: {
               processing_time: Date.now() - startTime,

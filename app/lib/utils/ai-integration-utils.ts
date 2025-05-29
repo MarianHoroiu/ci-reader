@@ -140,25 +140,30 @@ export function formatRomanianIDFields(fields: RomanianIDFields): Record<
       value: fields.domiciliul,
       formatted: fields.domiciliul || 'Nu a fost detectat',
     },
-    seria_si_numarul: {
-      label: 'Seria și Numărul',
-      value: fields.seria_si_numarul,
-      formatted: fields.seria_si_numarul || 'Nu a fost detectat',
+    seria: {
+      label: 'Seria',
+      value: fields.seria,
+      formatted: fields.seria || 'Nu a fost detectată',
+    },
+    numar: {
+      label: 'Numărul',
+      value: fields.numar,
+      formatted: fields.numar || 'Nu a fost detectat',
     },
     data_eliberarii: {
       label: 'Data Eliberării',
       value: fields.data_eliberarii,
       formatted: fields.data_eliberarii || 'Nu a fost detectată',
     },
-    eliberat_de: {
-      label: 'Eliberat de',
-      value: fields.eliberat_de,
-      formatted: fields.eliberat_de || 'Nu a fost detectat',
-    },
     valabil_pana_la: {
       label: 'Valabil până la',
       value: fields.valabil_pana_la,
       formatted: fields.valabil_pana_la || 'Nu a fost detectată',
+    },
+    eliberat_de: {
+      label: 'Eliberat de',
+      value: fields.eliberat_de,
+      formatted: fields.eliberat_de || 'Nu a fost detectat',
     },
   };
 }

@@ -254,6 +254,7 @@ Extract the complete address (Domiciliul):
     'STR. MIHAI VITEAZU NR. 10, CLUJ-NAPOCA',
     'STR. REPUBLICII NR. 45, BL. C2, SC. A, ET. 3, AP. 12, BRAȘOV',
     'CALEA DOROBANȚILOR NR. 100, TIMIȘOARA',
+    'Cal.Dorobanților nr.10, bl.x5, ap.35',
   ],
   validate: (value: string): boolean => {
     if (!value || value.trim().length < 5) return false;
@@ -272,39 +273,55 @@ Extract the complete address (Domiciliul):
 };
 
 /**
- * ID Series and Number extraction pattern
+ * ID Series extraction pattern
  */
-export const SERIES_PATTERN: FieldPattern = {
-  field: 'seria_si_numarul',
-  description: 'ID series and number with county code',
-  pattern: /^[A-Z]{1,3}\s\d{6}$/,
+export const SERIA_PATTERN: FieldPattern = {
+  field: 'seria',
+  description: 'ID series county code',
+  pattern: /^[A-Z]{1,3}$/,
   instructions: `
-Extract the ID series and number:
-- Format: [County Code][Space][6 digits]
-- County codes are 1-3 letters (usually 2)
+Extract the ID series:
+- Format: County Code (1-3 letters)
 - Common codes: RX, CJ, BV, TM, CT, etc.
-- Exactly one space between letters and numbers
-- Numbers are always 6 digits
-- Preserve exact spacing and case
+- Preserve exact case (usually uppercase)
 `,
-  variations: ['RX 123456', 'CJ 789012', 'BV 345678', 'TM 901234', 'CT 567890'],
+  variations: ['RX', 'CJ', 'BV', 'TM', 'CT'],
   validate: (value: string): boolean => {
     if (!value) return false;
-    return /^[A-Z]{1,3}\s\d{6}$/.test(value);
+    return /^[A-Z]{1,3}$/.test(value);
   },
   normalize: (value: string): string => {
-    // Ensure proper spacing and case
-    const match = value.match(/^([A-Za-z]{1,3})\s*(\d{6})$/);
-    if (match && match[1] && match[2]) {
-      return `${match[1].toUpperCase()} ${match[2]}`;
-    }
-    return value.trim();
+    return value.trim().toUpperCase();
+  },
+  commonErrors: ['Lowercase letters', 'Including the number part'],
+};
+
+/**
+ * ID Number extraction pattern
+ */
+export const NUMAR_PATTERN: FieldPattern = {
+  field: 'numar',
+  description: 'ID number (6 digits)',
+  pattern: /^\d{6}$/,
+  instructions: `
+Extract the ID number:
+- Format: 6 digits
+- No spaces or separators
+- Common format: "123456"
+`,
+  variations: ['123456', '789012', '345678', '901234', '567890'],
+  validate: (value: string): boolean => {
+    if (!value) return false;
+    return /^\d{6}$/.test(value);
+  },
+  normalize: (value: string): string => {
+    // Remove any non-digit characters
+    return value.replace(/\D/g, '');
   },
   commonErrors: [
-    'Missing space between letters and numbers',
-    'Incorrect number of digits',
-    'Lowercase county code',
-    'Extra spaces or characters',
+    'Including the series letters',
+    'Missing digits',
+    'Extra characters',
   ],
 };
 
@@ -396,10 +413,11 @@ export const FIELD_PATTERNS = {
   data_nasterii: DATE_PATTERN,
   locul_nasterii: BIRTH_PLACE_PATTERN,
   domiciliul: ADDRESS_PATTERN,
-  seria_si_numarul: SERIES_PATTERN,
+  seria: SERIA_PATTERN,
+  numar: NUMAR_PATTERN,
   data_eliberarii: DATE_PATTERN,
-  eliberat_de: AUTHORITY_PATTERN,
   valabil_pana_la: DATE_PATTERN,
+  eliberat_de: AUTHORITY_PATTERN,
 } as const;
 
 /**
@@ -498,11 +516,37 @@ export function crossValidateFields(fields: Partial<RomanianIDFields>): {
   const errors: string[] = [];
   const warnings: string[] = [];
 
-  // Validate CNP against birth date
+  // Cross-validate CNP with birth date and gender
   if (fields.cnp && fields.data_nasterii) {
     const cnpDate = extractDateFromCNP(fields.cnp);
     if (cnpDate && cnpDate !== fields.data_nasterii) {
       errors.push('CNP birth date does not match data_nasterii field');
+    }
+  }
+
+  // TODO: Check this as it may not be needed
+  // Validate seria and numar against birth place (county codes)
+  const seria = fields.seria;
+
+  if (seria && fields.locul_nasterii) {
+    const birthPlace = fields.locul_nasterii;
+
+    // Common county code mappings
+    const countyCodes: Record<string, string[]> = {
+      B: ['BUCUREȘTI'],
+      CJ: ['CLUJ', 'CLUJ-NAPOCA'],
+      BV: ['BRAȘOV'],
+      TM: ['TIMIȘOARA'],
+      CT: ['CONSTANȚA'],
+      IS: ['IAȘI'],
+    };
+
+    const expectedCities = countyCodes[seria];
+    if (
+      expectedCities &&
+      !expectedCities.some((city: string) => birthPlace.includes(city))
+    ) {
+      warnings.push('Series code may not match birth place');
     }
   }
 
@@ -530,33 +574,6 @@ export function crossValidateFields(fields: Partial<RomanianIDFields>): {
 
     if (expiryDate <= issueDate) {
       errors.push('Expiry date must be after issue date');
-    }
-  }
-
-  // Validate series against birth place (county codes)
-  if (fields.seria_si_numarul && fields.locul_nasterii) {
-    const seriesParts = fields.seria_si_numarul.split(' ');
-    if (seriesParts.length >= 1 && seriesParts[0]) {
-      const seriesCode = seriesParts[0];
-      const birthPlace = fields.locul_nasterii;
-
-      // Common county code mappings
-      const countyCodes: Record<string, string[]> = {
-        B: ['BUCUREȘTI'],
-        CJ: ['CLUJ', 'CLUJ-NAPOCA'],
-        BV: ['BRAȘOV'],
-        TM: ['TIMIȘOARA'],
-        CT: ['CONSTANȚA'],
-        IS: ['IAȘI'],
-      };
-
-      const expectedCities = countyCodes[seriesCode];
-      if (
-        expectedCities &&
-        !expectedCities.some((city: string) => birthPlace.includes(city))
-      ) {
-        warnings.push('Series code may not match birth place');
-      }
     }
   }
 

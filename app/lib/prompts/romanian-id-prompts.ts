@@ -155,10 +155,17 @@ ADDRESSES (domiciliul):
 - Include locality and postal information if present
 - Maintain original formatting and diacritics
 
-SERIA_SI_NUMARUL (ID Series and Number):
-- Format: [Letters][Space][Numbers] (e.g., "RX 123456")
-- Preserve exact spacing and character case
-- Validate series format (usually 2 letters)
+SERIA (ID Series):
+- Extract only the letter part of the ID series
+- Usually 2 uppercase letters representing county code
+- Example: "RX" (from "RX 123456")
+- Preserve exact case (usually uppercase)
+
+NUMĂRUL (ID Number):
+- Extract only the numeric part of the ID number
+- Exactly 6 digits
+- Example: "123456" (from "RX 123456")
+- No spaces or separators
 
 ISSUING AUTHORITY (eliberat_de):
 - Complete authority name (usually SPCLEP + location)
@@ -180,7 +187,8 @@ Return ONLY the JSON object with extracted data. Use null for any field that can
   "data_nasterii": null,
   "locul_nasterii": null,
   "domiciliul": null,
-  "seria_si_numarul": null,
+  "seria": null,
+  "numar": null,
   "data_eliberarii": null,
   "eliberat_de": null,
   "valabil_pana_la": null
@@ -237,13 +245,15 @@ FIELD PRIORITIZATION (in order of importance):
 2. prenume (surname) - Most critical for identification
 3. cnp (personal code) - Unique identifier
 4. data_nasterii (birth date) - Core demographic data
-5. seria_si_numarul (ID number) - Document identifier
-5. Other fields as clearly visible
+5. seria (ID letters) - Document identifier
+6. numar (ID numbers) - Document identifier
+7. Other fields as clearly visible
 
 FORMAT VALIDATION:
 - Dates: DD.MM.YYYY (use null if format unclear)
 - CNP: Exactly 13 digits (use null if incomplete)
-- Series: Letters + space + numbers (preserve visible format)
+- Series: Two letters, no space, no signs (preserve visible format)
+- Number: Six numbers, no space, no signs (preserve visible format)
 
 Be conservative with extraction - it's better to return null than incorrect data.
 
@@ -256,7 +266,8 @@ Return JSON with only confidently extracted fields:
   "data_nasterii": null,
   "locul_nasterii": null,
   "domiciliul": null,
-  "seria_si_numarul": null,
+  "seria": null,
+  "numar": null,
   "data_eliberarii": null,
   "eliberat_de": null,
   "valabil_pana_la": null
@@ -298,7 +309,8 @@ FIELD-SPECIFIC VALIDATION:
 - Dates: DD.MM.YYYY format, logical relationships
 - Names: Complete extraction with diacritics
 - Addresses: Full address with proper abbreviations
-- Series: Correct letter-number format with spacing
+- Series: Correct letters format with no spacing
+- Number: Correct numbers format with no spacing
 
 Return JSON with all fields (use null for non-target fields if not clearly visible):
 
@@ -309,7 +321,8 @@ Return JSON with all fields (use null for non-target fields if not clearly visib
   "data_nasterii": null,
   "locul_nasterii": null,
   "domiciliul": null,
-  "seria_si_numarul": null,
+  "seria": null,
+  "numar": null,
   "data_eliberarii": null,
   "eliberat_de": null,
   "valabil_pana_la": null
@@ -338,7 +351,8 @@ Document shows:
 - Birth date: "12.01.1995"
 - Birth place: "CLUJ-NAPOCA"
 - Address: "STR. MIHAI VITEAZU NR. 15, BL. C2, AP. 23, CLUJ-NAPOCA"
-- Series: "CJ 123456"
+- Series: "CJ"
+- Number: "123456"
 - Issue date: "15.06.2020"
 - Authority: "SPCLEP CLUJ"
 - Expiry: "15.06.2030"
@@ -351,7 +365,8 @@ Correct extraction:
   "data_nasterii": "12.01.1995",
   "locul_nasterii": "CLUJ-NAPOCA",
   "domiciliul": "STR. MIHAI VITEAZU NR. 15, BL. C2, AP. 23, CLUJ-NAPOCA",
-  "seria_si_numarul": "CJ 123456",
+  "seria": "CJ",
+  "numar": "123456",
   "data_eliberarii": "15.06.2020",
   "eliberat_de": "SPCLEP CLUJ",
   "valabil_pana_la": "15.06.2030"
@@ -365,7 +380,8 @@ Document shows:
 - Birth date: "15.03.1985"
 - Birth place: "BRAȘOV"
 - Address: "STR. REPUBLICII NR. 45, BRAȘOV"
-- Series: "BV 789012"
+- Series: "BV"
+- Number: "789012"
 - Issue date: "10.09.2019"
 - Authority: "SPCLEP BRAȘOV"
 - Expiry: "10.09.2029"
@@ -378,7 +394,8 @@ Correct extraction:
   "data_nasterii": "15.03.1985",
   "locul_nasterii": "BRAȘOV",
   "domiciliul": "STR. REPUBLICII NR. 45, BRAȘOV",
-  "seria_si_numarul": "BV 789012",
+  "seria": "BV",
+  "numar": "789012",
   "data_eliberarii": "10.09.2019",
   "eliberat_de": "SPCLEP BRAȘOV",
   "valabil_pana_la": "10.09.2029"
@@ -389,9 +406,10 @@ KEY PATTERNS LEARNED:
 2. CNP is always 13 consecutive digits
 3. Dates follow DD.MM.YYYY format strictly
 4. Addresses use standard abbreviations (STR., NR., BL., AP.)
-5. Series format: [County Code][Space][6 digits]
-6. Authority follows "SPCLEP [Location]" pattern
-7. Romanian diacritics (ă, â, î, ș, ț) must be preserved exactly
+5. Series is the 2-letter in UPPRCASE
+6. Number is always 6 digits
+7. Authority follows "SPCLEP [Location]" pattern
+8. Romanian diacritics (ă, â, î, ș, ț) must be preserved exactly
 
 ANALYSIS PROTOCOL:
 1. Apply learned patterns to the new document
@@ -411,7 +429,8 @@ Return ONLY the JSON object with extracted data:
   "data_nasterii": null,
   "locul_nasterii": null,
   "domiciliul": null,
-  "seria_si_numarul": null,
+  "seria": null,
+  "numar": null,
   "data_eliberarii": null,
   "eliberat_de": null,
   "valabil_pana_la": null

@@ -236,11 +236,11 @@ export default function FileUploadPage() {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Extragere Date Buletin Românesc
+            Extragere date Carte de Identitate din România
           </h1>
           <p className="text-lg text-gray-600">
-            Încărcați o imagine cu buletin de identitate pentru extragerea
-            automată a datelor
+            Încărcați o imagine cu o Carte de Identitate din România pentru
+            extragerea automată a datelor
           </p>
         </div>
 
