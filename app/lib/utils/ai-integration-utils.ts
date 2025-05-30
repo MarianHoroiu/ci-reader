@@ -125,6 +125,16 @@ export function formatRomanianIDFields(fields: RomanianIDFields): Record<
       value: fields.cnp,
       formatted: fields.cnp || 'Nu a fost detectat',
     },
+    nationalitate: {
+      label: 'Cetățenie',
+      value: fields.nationalitate,
+      formatted: fields.nationalitate || 'Nu a fost detectată',
+    },
+    sex: {
+      label: 'Sex',
+      value: fields.sex,
+      formatted: fields.sex || 'Nu a fost detectat',
+    },
     data_nasterii: {
       label: 'Data Nașterii',
       value: fields.data_nasterii,

@@ -150,6 +150,17 @@ CNP (Personal Numeric Code):
 - Common locations: Near the "CNP:" or "CNP" label on the ID
 - Format: 13 consecutive digits
 
+NATIONALITATE (Nationality):
+- Format: Usually "ROMÂNĂ / ROU" or other nationality in uppercase
+- Extract only the first part before slash ("ROMÂNĂ")
+- Common locations: Near the "CETĂȚENIE:" or "CETĂȚENIE" label on the ID
+- Example: "ROMÂNĂ" (DO NOT USE THIS VALUE - extract the actual nationality)
+
+SEX (Gender):
+- Format: Single letter "M" or "F"
+- Common locations: Near the "SEX:" or "SEX" label on the ID
+- Example: "M" for male, "F" for female
+
 DATA NAȘTERII (Birth Date):
 - Must be in DD.MM.YYYY format
 - Has periods (.) between day, month, and year
@@ -204,14 +215,16 @@ YOU MUST RETURN ONLY JSON. NO TEXT BEFORE OR AFTER THE JSON. Return exactly this
     "nume": "[EXTRACTED SURNAME ONLY]",
     "prenume": "[EXTRACTED GIVEN NAME(S) ONLY]",
     "cnp": "[13 DIGITS WITH NO SPACES]",
+    "nationalitate": "[NATIONALITY, FIRST WORD ONLY]",
+    "sex": "[M OR F]",
     "data_nasterii": "[DD.MM.YYYY FORMAT]",
     "locul_nasterii": "[EXTRACTED PLACE]",
     "domiciliul": "[FULL ADDRESS]",
     "seria": "[SERIES LETTERS ONLY]",
     "numar": "[6 DIGITS]",
     "data_eliberarii": "[DD.MM.YYYY FORMAT]",
-    "eliberat_de": "[ISSUING AUTHORITY]",
-    "valabil_pana_la": "[DD.MM.YYYY FORMAT]"
+    "eliberat_de": "[ISSUING AUTHORITY]"
+    "valabil_pana_la": "[DD.MM.YYYY FORMAT]",
   },
   "overall_confidence": {
     "score": 0.0-1.0,
@@ -229,8 +242,10 @@ CRITICAL RULES:
 6. DO NOT make up information - if you can't see it, use null
 7. Always preserve Romanian diacritics in text
 8. If no ID document is visible, set all fields to null and explain in overall_confidence.
-9. DO NOT USE PLACEHOLDER TEXT OR EXAMPLES - extract only the real data from the image
-10. RESPOND ONLY WITH JSON - NO EXPLANATIONS BEFORE OR AFTER THE JSON`;
+9. For nationality, if format is "X / Y", extract only X (first part before slash)
+10. For sex, extract only "M" or "F" - nothing else
+11. DO NOT USE PLACEHOLDER TEXT OR EXAMPLES - extract only the real data from the image
+12. RESPOND ONLY WITH JSON - NO EXPLANATIONS BEFORE OR AFTER THE JSON`;
 }
 
 /**
@@ -361,6 +376,8 @@ async function callOllamaAPI(
               nume: null,
               prenume: null,
               cnp: null,
+              nationalitate: null,
+              sex: null,
               data_nasterii: null,
               locul_nasterii: null,
               domiciliul: null,
@@ -540,6 +557,8 @@ async function callOllamaNativeAPI(
               nume: null,
               prenume: null,
               cnp: null,
+              nationalitate: null,
+              sex: null,
               data_nasterii: null,
               locul_nasterii: null,
               domiciliul: null,

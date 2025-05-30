@@ -404,12 +404,75 @@ Extract the birth place:
 };
 
 /**
+ * Nationality extraction pattern
+ */
+export const NATIONALITY_PATTERN: FieldPattern = {
+  field: 'nationalitate',
+  description: 'Nationality (Cetățenie) extraction',
+  pattern: /^[A-ZĂÂÎȘȚ\s]+$/,
+  instructions: `
+Extract the nationality (Cetățenie):
+- Usually appears as "ROMÂNĂ / ROU" or other nationality in uppercase
+- Extract only the first part before slash ("ROMÂNĂ")
+- Common locations: Near the "CETĂȚENIE:" or "CETĂȚENIE" label on the ID
+- Preserve exact spelling and diacritics
+`,
+  variations: ['ROMÂNĂ', 'MOLDOVEANĂ', 'UCRAINEANĂ', 'BULGARĂ', 'MAGHIARĂ'],
+  validate: (value: string): boolean => {
+    if (!value || value.trim().length < 2) return false;
+    return true;
+  },
+  normalize: (value: string): string => {
+    // If the value has a slash, take only the first part
+    if (value.includes('/')) {
+      const parts = value.split('/');
+      return parts[0]?.trim().toUpperCase() || value.trim().toUpperCase();
+    }
+    return value.trim().toUpperCase();
+  },
+  commonErrors: [
+    'Taking the first part and the slash',
+    'Taking the second part after slash',
+    'Missing diacritics',
+    'Lowercase instead of uppercase',
+  ],
+};
+
+/**
+ * Sex extraction pattern
+ */
+export const SEX_PATTERN: FieldPattern = {
+  field: 'sex',
+  description: 'Sex (M/F) extraction',
+  pattern: /^[MF]$/,
+  instructions: `
+Extract the sex/gender:
+- Must be a single letter: "M" for male or "F" for female
+- Common locations: Near the "SEX:" or "SEX" label on the ID
+`,
+  variations: ['M', 'F'],
+  validate: (value: string): boolean => {
+    if (!value) return false;
+    return /^[MF]$/.test(value);
+  },
+  normalize: (value: string): string => {
+    return value.trim().toUpperCase();
+  },
+  commonErrors: [
+    'Extracting full word (Masculin/Feminin) instead of single letter',
+    'Lowercase instead of uppercase',
+  ],
+};
+
+/**
  * All field patterns for easy access
  */
 export const FIELD_PATTERNS = {
   nume: NUME_PATTERN,
   prenume: PRENUME_PATTERN,
   cnp: CNP_PATTERN,
+  nationalitate: NATIONALITY_PATTERN,
+  sex: SEX_PATTERN,
   data_nasterii: DATE_PATTERN,
   locul_nasterii: BIRTH_PLACE_PATTERN,
   domiciliul: ADDRESS_PATTERN,
@@ -515,12 +578,42 @@ export function crossValidateFields(fields: Partial<RomanianIDFields>): {
 } {
   const errors: string[] = [];
   const warnings: string[] = [];
+  const suggestions: string[] = [];
+
+  // Add field-specific validation
+  for (const field in fields) {
+    if (Object.prototype.hasOwnProperty.call(fields, field)) {
+      const typedField = field as keyof RomanianIDFields;
+      const value = fields[typedField];
+
+      if (value !== undefined) {
+        addFieldSpecificValidation(
+          typedField,
+          value,
+          errors,
+          warnings,
+          suggestions
+        );
+      }
+    }
+  }
 
   // Cross-validate CNP with birth date and gender
   if (fields.cnp && fields.data_nasterii) {
     const cnpDate = extractDateFromCNP(fields.cnp);
     if (cnpDate && cnpDate !== fields.data_nasterii) {
       errors.push('CNP birth date does not match data_nasterii field');
+    }
+  }
+
+  // Cross-validate CNP with sex
+  if (fields.cnp && fields.sex) {
+    const firstDigit = parseInt(fields.cnp[0] || '0', 10);
+    const isMale = firstDigit % 2 === 1; // Odd first digit means male
+    const expectedSex = isMale ? 'M' : 'F';
+
+    if (fields.sex !== expectedSex) {
+      errors.push('CNP first digit does not match sex field');
     }
   }
 
@@ -534,11 +627,15 @@ export function crossValidateFields(fields: Partial<RomanianIDFields>): {
     // Common county code mappings
     const countyCodes: Record<string, string[]> = {
       B: ['BUCUREȘTI'],
-      CJ: ['CLUJ', 'CLUJ-NAPOCA'],
+      CJ: ['CLUJ'],
+      BR: ['BRĂILA'],
+      IF: ['ILFOV'],
+      IL: ['IALOMIȚA'],
       BV: ['BRAȘOV'],
       TM: ['TIMIȘOARA'],
       CT: ['CONSTANȚA'],
       IS: ['IAȘI'],
+      BN: ['BISTRIȚA-NĂSĂUD'],
     };
 
     const expectedCities = countyCodes[seria];
@@ -607,4 +704,89 @@ function extractDateFromCNP(cnp: string): string | null {
   }
 
   return `${day}.${month}.${year}`;
+}
+
+/**
+ * Add field-specific validation rules
+ */
+function addFieldSpecificValidation(
+  field: keyof RomanianIDFields,
+  value: string | null,
+  errors: string[],
+  warnings: string[],
+  _suggestions: string[]
+): void {
+  if (!value) return;
+
+  switch (field) {
+    case 'cnp':
+      if (!/^\d{13}$/.test(value)) {
+        errors.push('CNP must be exactly 13 digits');
+      }
+      break;
+
+    case 'data_nasterii':
+    case 'data_eliberarii':
+    case 'valabil_pana_la':
+      if (!/^\d{2}\.\d{2}\.\d{4}$/.test(value)) {
+        errors.push('Date must be in DD.MM.YYYY format');
+      }
+      break;
+
+    case 'seria':
+      if (!/^[A-Z]{1,3}$/.test(value)) {
+        errors.push('Series must be exactly 2 uppercase letters (e.g., "XR")');
+      }
+      break;
+
+    case 'numar':
+      if (!/^\d{6}$/.test(value)) {
+        errors.push('Number must be exactly 6 digits');
+      }
+      break;
+
+    case 'nationalitate':
+      if (value.length < 2) {
+        errors.push('Nationality too short');
+      }
+      if (!/^[A-ZĂÂÎȘȚ\s]+$/.test(value)) {
+        warnings.push('Nationality contains unexpected characters');
+      }
+      if (value.includes('/')) {
+        warnings.push(
+          'Nationality should contain only the first part before slash'
+        );
+      }
+      break;
+
+    case 'sex':
+      if (!/^[MF]$/.test(value)) {
+        errors.push('Sex must be "M" or "F"');
+      }
+      break;
+
+    case 'nume':
+      if (value.length < 2) {
+        errors.push('Name too short');
+      }
+      if (!/^[A-ZĂÂÎȘȚ\s\-']+$/.test(value)) {
+        warnings.push('Name contains unexpected characters');
+      }
+      break;
+
+    case 'prenume':
+      if (value.length < 2) {
+        errors.push('Given name too short');
+      }
+      if (!/^[A-ZĂÂÎȘȚ\s\-']+$/.test(value)) {
+        warnings.push('Given name contains unexpected characters');
+      }
+      break;
+
+    case 'eliberat_de':
+      if (!value.includes('SPC') && !value.includes('EVIDENTA')) {
+        warnings.push('Authority name may be incomplete');
+      }
+      break;
+  }
 }

@@ -64,12 +64,15 @@ Extract these exact fields with precise formatting:
 • nume: Full name (Nume) - Usually in UPPERCASE, may contain diacritics, may contain hyphen, may contain multiple words
 • prenume: Full surname (Prenume) - Usually in UPPERCASE, may contain diacritics, may contain hyphen, may contain multiple words
 • cnp: Personal Numeric Code - Exactly 13 digits, no spaces or separators
+• nationalitate: Nationality (Cetățenie) - Usually in UPPERCASE, may contain diacritics, if contains slash take only first part
+• sex: Sex - Single letter "M" or "F" only
 • data_nasterii: Birth date - Format: DD.MM.YYYY (e.g., 15.03.1985)
 • locul_nasterii: Birth place - City/locality name, may include county
 • domiciliul: Address - Complete address including street, number, city
-• seria_si_numarul: ID series and number - Format: XX 123456 (letters + space + digits)
+• seria: ID series - Format: exactly 2 uppercase letters (e.g., "RX")
+• numar: ID number - Format: exactly 6 digits (e.g., "123456")
 • data_eliberarii: Issue date - Format: DD.MM.YYYY
-• eliberat_de: Issuing authority - Usually starts with "SPCLEP" or similar
+• eliberat_de: Issuing authority - Usually starts with "SPCLEP", "SPCJEP" or similar
 • valabil_pana_la: Expiry date - Format: DD.MM.YYYY
 
 ROMANIAN LANGUAGE HANDLING:
@@ -92,10 +95,13 @@ Example output:
   "nume": "POPESCU",
   "prenume": "MARIA ELENA",
   "cnp": "2850315123456",
+  "nationalitate": "ROMÂNĂ",
+  "sex": "F",
   "data_nasterii": "15.03.1985",
   "locul_nasterii": "BUCUREȘTI",
   "domiciliul": "STR. VICTORIEI NR. 25, BL. A1, AP. 15, BUCUREȘTI",
-  "seria_si_numarul": "RX 123456",
+  "seria": "RX",
+  "numar": "123456",
   "data_eliberarii": "20.06.2020",
   "eliberat_de": "SPCLEP BUCUREȘTI",
   "valabil_pana_la": "20.06.2030"
@@ -143,6 +149,16 @@ CNP (Personal Numeric Code):
 - Validate against birth date if visible
 - No spaces, dashes, or other separators
 
+NATIONALITATE (Nationality):
+- Extract only the nationality word (usually ROMÂNĂ)
+- If format is "ROMÂNĂ / ROU", extract only "ROMÂNĂ", without the slash
+- Preserve all Romanian diacritics
+- Typically appears near "CETĂȚENIE" label
+
+SEX (Gender):
+- Extract single letter: M (male) or F (female)
+- Typically appears near "SEX" label
+
 DATES (data_nasterii, data_eliberarii, valabil_pana_la):
 - Strict DD.MM.YYYY format
 - Validate day (01-31), month (01-12), year ranges
@@ -185,14 +201,16 @@ Return ONLY the JSON object with extracted data. Use null for any field that can
   "nume": null,
   "prenume": null,
   "cnp": null,
+  "nationalitate": null,
+  "sex": null,
   "data_nasterii": null,
   "locul_nasterii": null,
   "domiciliul": null,
   "seria": null,
   "numar": null,
   "data_eliberarii": null,
-  "eliberat_de": null,
-  "valabil_pana_la": null
+  "valabil_pana_la": null,
+  "eliberat_de": null
 }
 
 Analyze the Romanian ID document with maximum precision:`,
@@ -245,16 +263,20 @@ FIELD PRIORITIZATION (in order of importance):
 1. nume (name) - Most critical for identification
 2. prenume (surname) - Most critical for identification
 3. cnp (personal code) - Unique identifier
-4. data_nasterii (birth date) - Core demographic data
-5. seria (ID letters) - Document identifier
-6. numar (ID numbers) - Document identifier
-7. Other fields as clearly visible
+4. nationalitate (nationality) - Important demographic data
+5. sex (gender) - Important demographic data
+6. data_nasterii (birth date) - Core demographic data
+7. seria (ID letters) - Document identifier
+8. numar (ID numbers) - Document identifier
+9. Other fields as clearly visible
 
 FORMAT VALIDATION:
 - Dates: DD.MM.YYYY (use null if format unclear)
 - CNP: Exactly 13 digits (use null if incomplete)
 - Series: Two letters, no space, no signs (preserve visible format)
 - Number: Six numbers, no space, no signs (preserve visible format)
+- Nationality: First word only (e.g., from "ROMÂNĂ / ROU" extract only "ROMÂNĂ")
+- Sex: Single letter "M" or "F" only
 
 Be conservative with extraction - it's better to return null than incorrect data.
 
@@ -264,14 +286,16 @@ Return JSON with only confidently extracted fields:
   "nume": null,
   "prenume": null,
   "cnp": null,
+  "nationalitate": null,
+  "sex": null,
   "data_nasterii": null,
   "locul_nasterii": null,
   "domiciliul": null,
   "seria": null,
   "numar": null,
   "data_eliberarii": null,
-  "valabil_pana_la": null
-  "eliberat_de": null,
+  "valabil_pana_la": null,
+  "eliberat_de": null
 }
 
 Analyze the document and extract only clearly readable information:`,
@@ -312,6 +336,8 @@ FIELD-SPECIFIC VALIDATION:
 - Addresses: Full address with proper abbreviations
 - Series: Correct letters format with no spacing
 - Number: Correct numbers format with no spacing
+- Nationality: If format is "X / Y", extract only X (first part, without the slash)
+- Sex: Extract only "M" or "F"
 
 Return JSON with all fields (use null for non-target fields if not clearly visible):
 
@@ -319,14 +345,16 @@ Return JSON with all fields (use null for non-target fields if not clearly visib
   "nume": null,
   "prenume": null,
   "cnp": null,
+  "nationalitate": null,
+  "sex": null,
   "data_nasterii": null,
   "locul_nasterii": null,
   "domiciliul": null,
   "seria": null,
   "numar": null,
   "data_eliberarii": null,
-  "valabil_pana_la": null
-  "eliberat_de": null,
+  "valabil_pana_la": null,
+  "eliberat_de": null
 }
 
 Focus on the target fields and extract with maximum accuracy:`,
@@ -349,28 +377,32 @@ Document shows:
 - Name: "IONESCU"
 - Surname: "ALEXANDRA MARIA"
 - CNP: "2950123456789"
+- Nationality: "ROMÂNĂ"
+- Sex: "F"
 - Birth date: "12.01.1995"
 - Birth place: "CLUJ-NAPOCA"
 - Address: "STR. MIHAI VITEAZU NR. 15, BL. C2, AP. 23, CLUJ-NAPOCA"
 - Series: "CJ"
 - Number: "123456"
 - Issue date: "15.06.2020"
-- Expiry: "15.06.2030"
+- Expiry: "23.01.2030"
 - Authority: "SPCLEP CLUJ"
 
 Correct extraction:
 {
   "nume": "IONESCU",
   "prenume": "ALEXANDRA MARIA",
-  "cnp": "2950123456789",
-  "data_nasterii": "12.01.1995",
+  "cnp": "2891103456789",
+  "nationalitate": "ROMÂNĂ",
+  "sex": "F",
+  "data_nasterii": "03.11.1989",
   "locul_nasterii": "CLUJ-NAPOCA",
   "domiciliul": "STR. MIHAI VITEAZU NR. 15, BL. C2, AP. 23, CLUJ-NAPOCA",
   "seria": "CJ",
   "numar": "123456",
   "data_eliberarii": "15.06.2020",
-  "valabil_pana_la": "15.06.2030"
-  "eliberat_de": "SPCLEP CLUJ",
+  "valabil_pana_la": "11.03.2030",
+  "eliberat_de": "SPCJEP CLUJ"
 }
 
 EXAMPLE 2 - Romanian ID with diacritics:
@@ -378,28 +410,32 @@ Document shows:
 - Name: "POPESCU"
 - Surname: "ȘTEFAN CĂTĂLIN"
 - CNP: "1850315123456"
+- Nationality: "ROMÂNĂ"
+- Sex: "M"
 - Birth date: "15.03.1985"
 - Birth place: "BRAȘOV"
 - Address: "STR. REPUBLICII NR. 45, BRAȘOV"
 - Series: "BV"
 - Number: "789012"
 - Issue date: "10.09.2019"
+- Expiry: "15.03.2029"
 - Authority: "SPCLEP BRAȘOV"
-- Expiry: "10.09.2029"
 
 Correct extraction:
 {
   "nume": "POPESCU",
   "prenume": "ȘTEFAN CĂTĂLIN",
-  "cnp": "1850315123456",
-  "data_nasterii": "15.03.1985",
+  "cnp": "1850420123456",
+  "nationalitate": "ROMÂNĂ",
+  "sex": "M",
+  "data_nasterii": "20.04.1985",
   "locul_nasterii": "BRAȘOV",
   "domiciliul": "STR. REPUBLICII NR. 45, BRAȘOV",
   "seria": "BV",
   "numar": "789012",
   "data_eliberarii": "10.09.2019",
-  "valabil_pana_la": "10.09.2029"
-  "eliberat_de": "SPCLEP BRAȘOV",
+  "valabil_pana_la": "20.04.2029",
+  "eliberat_de": "SPCLEP BRAȘOV"
 }
 
 KEY PATTERNS LEARNED:
@@ -407,10 +443,12 @@ KEY PATTERNS LEARNED:
 2. CNP is always 13 consecutive digits
 3. Dates follow DD.MM.YYYY format strictly
 4. Addresses use standard abbreviations (STR., NR., BL., AP.) and may split into multiple lines
-5. Series is the 2-letter in UPPRCASE
+5. Series is always 2 letters in UPPRCASE
 6. Number is always 6 digits
-7. Authority follows "SPCLEP [Location]" pattern
-8. Romanian diacritics (ă, â, î, ș, ț) must be preserved exactly
+7. Nationality is typically "ROMÂNĂ" with diacritics
+8. Sex is a single letter: "M" or "F"
+9. Authority follows "SPCLEP [Location]" or "SPCJEP [Location]" pattern
+10. Romanian diacritics (ă, â, î, ș, ț) must be preserved exactly
 
 ANALYSIS PROTOCOL:
 1. Apply learned patterns to the new document
@@ -427,14 +465,16 @@ Return ONLY the JSON object with extracted data:
   "nume": null,
   "prenume": null,
   "cnp": null,
+  "nationalitate": null,
+  "sex": null,
   "data_nasterii": null,
   "locul_nasterii": null,
   "domiciliul": null,
   "seria": null,
   "numar": null,
   "data_eliberarii": null,
-  "valabil_pana_la": null
-  "eliberat_de": null,
+  "valabil_pana_la": null,
+  "eliberat_de": null
 }
 
 Extract information following the learned patterns:`,

@@ -11,6 +11,10 @@ export interface RomanianIDFields {
   prenume: string | null;
   /** Personal Numeric Code (CNP) */
   cnp: string | null;
+  /** Nationality (Cetățenie) */
+  nationalitate: string | null;
+  /** Sex (Sex) */
+  sex: string | null;
   /** Date of birth (Data nașterii) */
   data_nasterii: string | null;
   /** Place of birth (Locul nașterii) */
