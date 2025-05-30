@@ -107,6 +107,7 @@ export function formatRomanianIDFields(fields: RomanianIDFields): Record<
     label: string;
     value: string | null;
     formatted: string;
+    tooltip?: string;
   }
 > {
   return {
@@ -124,6 +125,8 @@ export function formatRomanianIDFields(fields: RomanianIDFields): Record<
       label: 'CNP',
       value: fields.cnp,
       formatted: fields.cnp || 'Nu a fost detectat',
+      tooltip:
+        'Codul Numeric Personal conține data nașterii și sexul codificate în primele cifre',
     },
     nationalitate: {
       label: 'Cetățenie',
@@ -134,11 +137,15 @@ export function formatRomanianIDFields(fields: RomanianIDFields): Record<
       label: 'Sex',
       value: fields.sex,
       formatted: fields.sex || 'Nu a fost detectat',
+      tooltip:
+        'Prima cifră din CNP trebuie să corespundă cu sexul (impară=M, pară=F)',
     },
     data_nasterii: {
       label: 'Data Nașterii',
       value: fields.data_nasterii,
       formatted: fields.data_nasterii || 'Nu a fost detectată',
+      tooltip:
+        'Nu apare vizibil pe buletin, este extrasă din CNP (cifrele 2-7)',
     },
     locul_nasterii: {
       label: 'Locul Nașterii',
@@ -169,6 +176,8 @@ export function formatRomanianIDFields(fields: RomanianIDFields): Record<
       label: 'Valabil până la',
       value: fields.valabil_pana_la,
       formatted: fields.valabil_pana_la || 'Nu a fost detectată',
+      tooltip:
+        'Ziua și luna trebuie să coincidă cu cele din data nașterii, iar anul este de obicei la 10 ani după data eliberării',
     },
     eliberat_de: {
       label: 'Eliberat de',

@@ -9,6 +9,14 @@ import type {
   AIVisionOCRResponse,
   RomanianIDExtractionResult,
 } from '@/lib/types/romanian-id-types';
+import {
+  extractBirthDateFromCNP,
+  extractGenderFromCNP,
+  validateCNPConsistency,
+  validateDateConsistency,
+  validateCNP,
+  validateRomanianIDData,
+} from '@/lib/utils/cnp-utils';
 
 // Configuration
 const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
@@ -31,6 +39,58 @@ async function fileToBase64(file: File): Promise<string> {
 }
 
 /**
+ * Fix common confusion between address and ID number fields
+ */
+function fixAddressIdNumberConfusion(fields: any, warnings: string[]): void {
+  if (!fields.numar || !fields.domiciliul) return;
+
+  // If ID number contains letters or is clearly not a 6-digit number, it might be part of the address
+  if (!/^\d{6}$/.test(fields.numar)) {
+    // Store the potentially confused values
+    const originalNumar = fields.numar;
+    const originalAddress = fields.domiciliul;
+
+    // Try to extract a valid ID number from the address if it contains digit patterns
+    const addressDigits = originalAddress.match(/\b\d{6}\b/g);
+
+    if (addressDigits && addressDigits.length > 0) {
+      // Found a 6-digit number in the address - this might be the real ID number
+      const potentialNumar = addressDigits[0];
+
+      // Update the values and log the change
+      fields.numar = potentialNumar;
+
+      // Add original value to address if it looks like it belongs there
+      if (
+        /[A-Za-z]/.test(originalNumar) ||
+        /Jud|Com|Sat|Str/i.test(originalNumar)
+      ) {
+        // Combine the original "numar" with the address if it appears to be part of the address
+        fields.domiciliul = `${originalAddress} ${originalNumar}`;
+      }
+
+      warnings.push(
+        `Possible confusion between ID number and address detected. Updated ID number from "${originalNumar}" to "${potentialNumar}".`
+      );
+    } else {
+      // Try to extract just the digits from the ID number field
+      const numarDigits = originalNumar.replace(/\D/g, '');
+
+      if (numarDigits.length === 6) {
+        fields.numar = numarDigits;
+        warnings.push(
+          `ID number "${originalNumar}" contained non-digits. Corrected to "${numarDigits}".`
+        );
+      } else {
+        warnings.push(
+          `ID number "${originalNumar}" is invalid. It should be 6 digits only.`
+        );
+      }
+    }
+  }
+}
+
+/**
  * Process extracted data to ensure proper structure and validate it's not just returning template values
  */
 function processExtractedData(data: any): {
@@ -44,9 +104,173 @@ function processExtractedData(data: any): {
     return { data, isValid: false, invalidReason: 'Missing fields object' };
   }
 
+  // Ensure metadata object exists
+  if (!data.metadata) {
+    data.metadata = {};
+  }
+
+  // Ensure warnings array exists
+  if (!data.metadata.warnings) {
+    data.metadata.warnings = [];
+  }
+
+  // Fix common extraction confusions
+  fixAddressIdNumberConfusion(data.fields, data.metadata.warnings);
+
+  // Validate ID number - must be exactly 6 digits
+  if (data.fields.numar && !/^\d{6}$/.test(data.fields.numar)) {
+    data.metadata.warnings.push(
+      `Invalid ID number format: ${data.fields.numar}. Must be exactly 6 digits with no letters.`
+    );
+
+    // Try to fix common issues with ID number
+    const digitsOnly = data.fields.numar.replace(/\D/g, '');
+    if (digitsOnly.length === 6) {
+      data.fields.numar = digitsOnly;
+      data.metadata.warnings.push(
+        `Fixed ID number by removing non-digit characters: ${data.fields.numar}`
+      );
+    } else {
+      data.metadata.warnings.push(
+        `Could not automatically fix ID number: ${data.fields.numar}. It may be confused with another field.`
+      );
+    }
+  }
+
+  // Validate series - must be only letters
+  if (data.fields.seria && !/^[A-Z]{1,3}$/.test(data.fields.seria)) {
+    data.metadata.warnings.push(
+      `Invalid series format: ${data.fields.seria}. Must be 1-3 uppercase letters only.`
+    );
+  }
+
+  // Birth date must ALWAYS be extracted from CNP, as it's not visible on Romanian ID cards
+  if (data.fields.cnp) {
+    const extractedDate = extractBirthDateFromCNP(data.fields.cnp);
+    if (extractedDate) {
+      // If the model provided a birth date, verify it matches what CNP encodes
+      if (
+        data.fields.data_nasterii &&
+        data.fields.data_nasterii !== extractedDate
+      ) {
+        data.metadata.warnings.push(
+          `Provided birth date (${data.fields.data_nasterii}) doesn't match CNP-encoded date (${extractedDate}). Using CNP-derived date.`
+        );
+      }
+
+      // Always use the CNP-derived birth date
+      data.fields.data_nasterii = extractedDate;
+    } else {
+      data.metadata.warnings.push(
+        `Could not extract birth date from CNP: ${data.fields.cnp}. CNP may be invalid.`
+      );
+    }
+  } else if (data.fields.data_nasterii) {
+    // If we have a birth date but no CNP, warn that this is unusual
+    data.metadata.warnings.push(
+      'Birth date provided but no CNP found. Birth date should be derived from CNP.'
+    );
+  }
+
+  // Validate sex against CNP if both are present
+  if (data.fields.cnp && data.fields.sex) {
+    const extractedSex = extractGenderFromCNP(data.fields.cnp);
+    if (extractedSex && data.fields.sex !== extractedSex) {
+      // Sex field must match CNP's encoded sex
+      data.metadata.warnings.push(
+        `Sex field (${data.fields.sex}) doesn't match CNP-encoded gender (${extractedSex}). This is inconsistent.`
+      );
+    }
+  } else if (!data.fields.sex && data.fields.cnp) {
+    // Extract sex from CNP if not provided
+    const extractedSex = extractGenderFromCNP(data.fields.cnp);
+    if (extractedSex) {
+      data.fields.sex = extractedSex;
+    }
+  }
+
+  // Validate expiry date against birth date from CNP
+  if (data.fields.cnp && data.fields.valabil_pana_la) {
+    const birthDate = extractBirthDateFromCNP(data.fields.cnp);
+    if (birthDate) {
+      const birthParts = birthDate.split('.');
+      const expiryParts = data.fields.valabil_pana_la.split('.');
+
+      if (birthParts.length === 3 && expiryParts.length === 3) {
+        const birthDay = birthParts[0];
+        const birthMonth = birthParts[1];
+        const expiryDay = expiryParts[0];
+        const expiryMonth = expiryParts[1];
+
+        if (birthDay !== expiryDay || birthMonth !== expiryMonth) {
+          data.metadata.warnings.push(
+            `Expiry date day/month (${expiryDay}.${expiryMonth}) doesn't match birth date day/month (${birthDay}.${birthMonth}) from CNP. ID cards expire on the holder's birth day.`
+          );
+        }
+      }
+    }
+  }
+
+  // Validate CNP using the official Romanian algorithm
+  if (data.fields.cnp && !validateCNP(data.fields.cnp)) {
+    data.metadata.warnings.push(
+      `CNP validation failed: ${data.fields.cnp}. The CNP appears to be invalid according to the official algorithm.`
+    );
+  }
+
+  // Validate consistency between CNP, birth date and sex
+  if (data.fields.cnp) {
+    const { isValid, errors } = validateCNPConsistency(
+      data.fields.cnp,
+      data.fields.data_nasterii,
+      data.fields.sex
+    );
+
+    if (!isValid && errors.length > 0) {
+      data.metadata.warnings.push(...errors);
+    }
+  }
+
+  // Validate consistency between dates
+  if (
+    data.fields.data_nasterii &&
+    data.fields.data_eliberarii &&
+    data.fields.valabil_pana_la
+  ) {
+    const { isValid, errors } = validateDateConsistency(
+      data.fields.data_nasterii,
+      data.fields.data_eliberarii,
+      data.fields.valabil_pana_la
+    );
+
+    if (!isValid && errors.length > 0) {
+      data.metadata.warnings.push(...errors);
+    }
+  }
+
   // If the model returned seria and numar but not seria_si_numarul, combine them
   if (data.fields.seria && data.fields.numar && !data.fields.seria_si_numarul) {
     data.fields.seria_si_numarul = `${data.fields.seria} ${data.fields.numar}`;
+  }
+
+  // Perform comprehensive validation
+  const validationResult = validateRomanianIDData({
+    cnp: data.fields.cnp,
+    data_nasterii: data.fields.data_nasterii,
+    sex: data.fields.sex,
+    data_eliberarii: data.fields.data_eliberarii,
+    valabil_pana_la: data.fields.valabil_pana_la,
+    seria: data.fields.seria,
+    numar: data.fields.numar,
+  });
+
+  // Add validation errors and warnings to metadata
+  if (validationResult.errors.length > 0) {
+    data.metadata.warnings.push(...validationResult.errors);
+  }
+
+  if (validationResult.warnings.length > 0) {
+    data.metadata.warnings.push(...validationResult.warnings);
   }
 
   // Add empty confidence object if not provided by the model
@@ -94,6 +318,8 @@ function processExtractedData(data: any): {
     'Issue date in DD.MM.YYYY format',
     'Issuing authority',
     'Expiry date in DD.MM.YYYY format',
+    '6 DIGITS ONLY',
+    'FULL ADDRESS INCLUDING ALL LINES',
   ];
 
   // Check each field to see if it's a template value
@@ -128,6 +354,10 @@ DOCUMENT ANALYSIS INSTRUCTIONS:
 3. Extract EXACTLY what is written on the document, preserving capitalization and diacritics
 4. Distinguish between field labels and actual values
 5. Be precise with surname vs given name fields
+6. Pay careful attention to ID card number format - it MUST be 6 digits without letters
+7. Ensure address is extracted completely, including all lines shown
+
+IMPORTANT: The birth date (data nașterii) is NOT present as a visible field on Romanian ID cards. It must ALWAYS be derived from CNP.
 
 FIELD FORMATS AND GUIDELINES:
 
@@ -149,6 +379,11 @@ CNP (Personal Numeric Code):
 - Must be exactly 13 digits with no spaces
 - Common locations: Near the "CNP:" or "CNP" label on the ID
 - Format: 13 consecutive digits
+- Contains encoded information about birth date and sex:
+  * First digit: 1=Male born 1900-1999, 2=Female born 1900-1999, 5=Male born 2000+, 6=Female born 2000+
+  * Next 6 digits: Birth date in YYMMDD format
+  * The CNP must be validated according to the official algorithm (check digit)
+  * The first digit of CNP must be consistent with the sex field
 
 NATIONALITATE (Nationality):
 - Format: Usually "ROMÂNĂ / ROU" or other nationality in uppercase
@@ -160,11 +395,13 @@ SEX (Gender):
 - Format: Single letter "M" or "F"
 - Common locations: Near the "SEX:" or "SEX" label on the ID
 - Example: "M" for male, "F" for female
+- This MUST be consistent with the first digit of the CNP (odd=male, even=female)
 
 DATA NAȘTERII (Birth Date):
-- Must be in DD.MM.YYYY format
-- Has periods (.) between day, month, and year
-- Common locations: Near the "DATA NAȘTERII:" label on the ID
+- NOT visibly present on the Romanian ID card
+- Must be extracted from the CNP (digits 2-7 in YYMMDD format)
+- Must be in DD.MM.YYYY format in the output
+- Always derive this field from the CNP, not from visual inspection of the card
 
 LOCUL NAȘTERII (Birth Place):
 - Usually a city or locality name
@@ -172,20 +409,25 @@ LOCUL NAȘTERII (Birth Place):
 - Common locations: Near the "LOCUL NAȘTERII:" label on the ID
 
 DOMICILIUL (Address):
-- Complete residential address
-- May include street, number, block, apartment, city
-- May split into multiple lines
+- Complete residential address, including ALL LINES
+- May include street, number, block, apartment, city, county
+- Often spans over MULTIPLE LINES
 - Common locations: Near the "DOMICILIUL:" label on the ID
+- IMPORTANT: Extract the ENTIRE address - all parts, all lines
 
 SERIA (ID Series):
 - Format: Letters only (usually 2 letters)
 - Common locations: Near the "SERIA" label on the ID
 - Examples: "XX", "AB", "CJ" (DO NOT USE THESE VALUES - extract the actual series)
+- SHOULD NOT contain digits
 
 NUMĂRUL (ID Number):
-- Format: 6 digits with no spaces
+- Format: MUST BE EXACTLY 6 DIGITS with no spaces
 - Common locations: Near the "NR." label on the ID
 - Example: "123456" (DO NOT USE THIS VALUE - extract the actual number)
+- MUST ONLY CONTAIN DIGITS - no letters
+- ALWAYS extract 6 digits, no more, no less
+- If it appears to have letters or fewer than 6 digits, you are likely misreading it
 
 DATA ELIBERĂRII (Issue Date):
 - Must be in DD.MM.YYYY format
@@ -200,12 +442,22 @@ VALABIL PÂNĂ LA (Expiry Date):
 - Must be in DD.MM.YYYY format
 - Has periods (.) between day, month, and year
 - Common locations: Near the "VALABIL PÂNĂ LA:" label on the ID
+- Romanian IDs are typically valid for 10 years from issue date
+- The day and month of the expiry date MUST match the day and month of the birth date (extracted from CNP)
+- The year of the expiry date is typically 10 years after the issue date
 
 ROMANIAN ID CARD LAYOUT:
 - Top section: ROMÂNIA, EU stars, etc.
 - Middle left: Photo and signature
 - Middle right: Personal information (name, CNP, birth)
 - Bottom section: Address, series/number, dates, authority
+
+CNP VALIDATION AND RELATIONSHIPS:
+- The CNP must be validated using the official Romanian check digit algorithm
+- The CNP encodes birth date in positions 2-7 (YYMMDD format)
+- The CNP's first digit encodes gender (odd=male, even=female)
+- ID cards expire on the holder's birth day and month, 10 years after issuance
+- The birth date is NOT visible on the card and must be derived from CNP
 
 OUTPUT FORMAT:
 YOU MUST RETURN ONLY JSON. NO TEXT BEFORE OR AFTER THE JSON. Return exactly this structure:
@@ -217,14 +469,14 @@ YOU MUST RETURN ONLY JSON. NO TEXT BEFORE OR AFTER THE JSON. Return exactly this
     "cnp": "[13 DIGITS WITH NO SPACES]",
     "nationalitate": "[NATIONALITY, FIRST WORD ONLY]",
     "sex": "[M OR F]",
-    "data_nasterii": "[DD.MM.YYYY FORMAT]",
+    "data_nasterii": "[DD.MM.YYYY FORMAT - EXTRACTED FROM CNP]",
     "locul_nasterii": "[EXTRACTED PLACE]",
-    "domiciliul": "[FULL ADDRESS]",
+    "domiciliul": "[FULL ADDRESS INCLUDING ALL LINES]",
     "seria": "[SERIES LETTERS ONLY]",
-    "numar": "[6 DIGITS]",
+    "numar": "[6 DIGITS ONLY]",
     "data_eliberarii": "[DD.MM.YYYY FORMAT]",
-    "eliberat_de": "[ISSUING AUTHORITY]"
     "valabil_pana_la": "[DD.MM.YYYY FORMAT]",
+    "eliberat_de": "[ISSUING AUTHORITY]"
   },
   "overall_confidence": {
     "score": 0.0-1.0,
@@ -238,14 +490,17 @@ CRITICAL RULES:
 2. If you cannot see a value clearly, use null for that field, but NEVER use the string "null"
 3. EXTRACT ACTUAL TEXT from the document, not placeholders
 4. SPLIT the person's name into surname (nume) and given name (prenume) correctly
-5. The address may split into multiple lines, extract the full address
+5. The address (domiciliul) may split into multiple lines, extract the FULL address including ALL LINES
 6. DO NOT make up information - if you can't see it, use null
 7. Always preserve Romanian diacritics in text
-8. If no ID document is visible, set all fields to null and explain in overall_confidence.
+8. If no ID document is visible, set all fields to null and explain in overall_confidence
 9. For nationality, if format is "X / Y", extract only X (first part before slash)
-10. For sex, extract only "M" or "F" - nothing else
-11. DO NOT USE PLACEHOLDER TEXT OR EXAMPLES - extract only the real data from the image
-12. RESPOND ONLY WITH JSON - NO EXPLANATIONS BEFORE OR AFTER THE JSON`;
+10. For sex, extract only "M" or "F" and ensure it matches the CNP's first digit
+11. For data_nasterii, ALWAYS extract it from the CNP - it is NOT visible on the card
+12. For valabil_pana_la, verify day and month match birth date from CNP
+13. For numar (ID number), MUST EXTRACT EXACTLY 6 DIGITS - not 5, not 7, and NO LETTERS
+14. DO NOT USE PLACEHOLDER TEXT OR EXAMPLES - extract only the real data from the image
+15. RESPOND ONLY WITH JSON - NO EXPLANATIONS BEFORE OR AFTER THE JSON`;
 }
 
 /**

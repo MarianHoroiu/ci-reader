@@ -173,8 +173,18 @@ export default function AIExtractionResults({
           {Object.entries(formattedFields).map(([fieldName, field]) => {
             return (
               <div key={fieldName} className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">
+                <label className="text-sm font-medium text-gray-700 flex items-center">
                   {field.label}
+                  {field.tooltip && (
+                    <div className="ml-1 group relative">
+                      <span className="inline-flex items-center justify-center w-4 h-4 bg-gray-200 text-gray-600 text-xs rounded-full hover:bg-gray-300 cursor-help">
+                        ?
+                      </span>
+                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-60 p-2 bg-gray-800 text-white text-xs rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity duration-200 z-10">
+                        {field.tooltip}
+                      </div>
+                    </div>
+                  )}
                 </label>
 
                 <div className="relative">
@@ -195,8 +205,19 @@ export default function AIExtractionResults({
                     />
                   ) : (
                     <div className="flex items-center">
-                      <div className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
+                      <div
+                        className={`flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 ${
+                          fieldName === 'data_nasterii' || fieldName === 'sex'
+                            ? 'border-blue-200 bg-blue-50'
+                            : ''
+                        }`}
+                      >
                         {field.formatted}
+                        {fieldName === 'data_nasterii' && (
+                          <span className="ml-2 text-xs text-blue-600">
+                            (din CNP)
+                          </span>
+                        )}
                       </div>
                       {field.value && (
                         <button

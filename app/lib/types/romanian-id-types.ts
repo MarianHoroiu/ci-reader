@@ -9,13 +9,13 @@ export interface RomanianIDFields {
   nume: string | null;
   /** Given name (Prenume) */
   prenume: string | null;
-  /** Personal Numeric Code (CNP) */
+  /** Personal Numeric Code (CNP) - Contains encoded birth date and sex information */
   cnp: string | null;
   /** Nationality (Cetățenie) */
   nationalitate: string | null;
-  /** Sex (Sex) */
+  /** Sex (Sex) - Must be consistent with CNP's first digit (odd=M, even=F) */
   sex: string | null;
-  /** Date of birth (Data nașterii) */
+  /** Date of birth (Data nașterii) - NOT visible on Romanian ID cards, must be derived from CNP */
   data_nasterii: string | null;
   /** Place of birth (Locul nașterii) */
   locul_nasterii: string | null;
@@ -27,7 +27,7 @@ export interface RomanianIDFields {
   numar: string | null;
   /** Issue date (Data eliberării) */
   data_eliberarii: string | null;
-  /** Validity date (Valabil până la) */
+  /** Validity date (Valabil până la) - Day and month must match birth date (from CNP) */
   valabil_pana_la: string | null;
   /** Issuing authority (Eliberat de) */
   eliberat_de: string | null;

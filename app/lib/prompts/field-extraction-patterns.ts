@@ -107,21 +107,24 @@ Extract the given name/first name (Prenume):
  */
 export const CNP_PATTERN: FieldPattern = {
   field: 'cnp',
-  description: 'Personal Numeric Code - exactly 13 digits',
+  description:
+    'Personal Numeric Code - exactly 13 digits with birth date and sex encoding',
   pattern: /^\d{13}$/,
   instructions: `
 Extract the CNP (Cod Numeric Personal):
 - Must be exactly 13 consecutive digits
 - No spaces, dashes, or other separators
 - First digit indicates gender and century:
-  * 1-2: Male/Female born 1900-1999
-  * 3-4: Male/Female born 1800-1899
-  * 5-6: Male/Female born 2000-2099
-  * 7-8: Male/Female foreign residents
+  * 1=Male born 1900-1999
+  * 2=Female born 1900-1999
+  * 5=Male born 2000-2099
+  * 6=Female born 2000-2099
 - Digits 2-7 represent birth date (YYMMDD)
 - Digits 8-9 represent county code
 - Digits 10-12 are sequential numbers
 - Digit 13 is a check digit
+- The CNP is the source of birth date information
+- The CNP's first digit must be consistent with the sex field
 `,
   variations: [
     '1850315123456',
@@ -154,6 +157,8 @@ Extract the CNP (Cod Numeric Personal):
     'Incorrect digit count (less or more than 13)',
     'Confusing similar digits (0/O, 1/I)',
     'Missing leading zeros',
+    'Inconsistency between CNP and sex field',
+    'Not validating the check digit',
   ],
 };
 
@@ -172,7 +177,8 @@ Extract dates in DD.MM.YYYY format:
 - Separator: Period (.) between components
 - Examples: 15.03.1985, 01.12.2020
 - Validate logical date ranges
-- Cross-check with CNP when possible
+- For birth date: NOT visible on card, extract from CNP
+- For expiry date: Day and month MUST match birth date
 `,
   variations: ['15.03.1985', '01.12.2020', '25.07.1992', '03.11.1978'],
   validate: (value: string): boolean => {
@@ -226,6 +232,8 @@ Extract dates in DD.MM.YYYY format:
     'Missing leading zeros (1.3.1985 instead of 01.03.1985)',
     'Wrong date format (MM.DD.YYYY instead of DD.MM.YYYY)',
     'Invalid dates (32.13.1985)',
+    'Looking for birth date on the card instead of extracting from CNP',
+    'Expiry date not matching birth date day and month',
   ],
 };
 
@@ -237,7 +245,7 @@ export const ADDRESS_PATTERN: FieldPattern = {
   description: 'Complete address with Romanian abbreviations',
   instructions: `
 Extract the complete address (Domiciliul):
-- Include all address components
+- Include ALL address components from ALL LINES
 - Preserve Romanian abbreviations:
   * STR. (Strada - Street)
   * NR. (Numărul - Number)
@@ -245,21 +253,30 @@ Extract the complete address (Domiciliul):
   * AP. (Apartamentul - Apartment)
   * SC. (Scara - Staircase)
   * ET. (Etajul - Floor)
+  * JUD. (Județul - County)
+  * COM. (Comuna - Commune)
+  * SAT. (Satul - Village)
+  * ORȘ. (Orașul - Town)
+  * MUN. (Municipiul - Municipality)
 - Maintain original formatting and diacritics
-- Include locality/city name
-- May span over multiple lines
+- Include locality/city name and county
+- MUST include ALL LINES from the address section
+- Be careful not to confuse address with other fields
 `,
   variations: [
     'STR. VICTORIEI NR. 25, BL. A1, AP. 15, BUCUREȘTI',
     'STR. MIHAI VITEAZU NR. 10, CLUJ-NAPOCA',
     'STR. REPUBLICII NR. 45, BL. C2, SC. A, ET. 3, AP. 12, BRAȘOV',
     'CALEA DOROBANȚILOR NR. 100, TIMIȘOARA',
-    'Cal.Dorobanților nr.10, bl.x5, ap.35',
+    'JUD. AB SAT. CĂRPINIȘ (COM. ROȘIA MONTANĂ)',
+    'JUD. ALBA MUN. ALBA IULIA STR. TRANSILVANIEI NR. 21',
   ],
   validate: (value: string): boolean => {
     if (!value || value.trim().length < 5) return false;
-    // Should contain at least a street indicator or number
-    return /(?:STR\.|CALEA|BDUL|PIAȚA|NR\.|\d+)/i.test(value);
+    // Should contain at least common address indicators
+    return /(?:STR\.|CALEA|BDUL|PIAȚA|NR\.|BL\.|AP\.|ET\.|SC\.|JUD\.|COM\.|SAT\.|MUN\.|ORȘ\.|\d+)/i.test(
+      value
+    );
   },
   normalize: (value: string): string => {
     return value.trim().replace(/\s+/g, ' ');
@@ -268,7 +285,8 @@ Extract the complete address (Domiciliul):
     'Missing abbreviation periods (STR instead of STR.)',
     'Incorrect abbreviations (STRADA instead of STR.)',
     'Missing address components',
-    'Truncated due to line breaks',
+    'Only extracting the first line when address spans multiple lines',
+    'Confusing parts of address with ID number or other fields',
   ],
 };
 
@@ -301,17 +319,21 @@ Extract the ID series:
  */
 export const NUMAR_PATTERN: FieldPattern = {
   field: 'numar',
-  description: 'ID number (6 digits)',
+  description: 'ID number (exactly 6 digits)',
   pattern: /^\d{6}$/,
   instructions: `
 Extract the ID number:
-- Format: 6 digits
+- Format: EXACTLY 6 digits
 - No spaces or separators
+- MUST contain ONLY digits, NO letters
 - Common format: "123456"
+- Located near "NR." label on the ID
+- If it appears to have letters or fewer than 6 digits, you may be confusing it with another field
 `,
   variations: ['123456', '789012', '345678', '901234', '567890'],
   validate: (value: string): boolean => {
     if (!value) return false;
+    // Must be exactly 6 digits, no letters or special characters
     return /^\d{6}$/.test(value);
   },
   normalize: (value: string): string => {
@@ -322,6 +344,8 @@ Extract the ID number:
     'Including the series letters',
     'Missing digits',
     'Extra characters',
+    'Including letters from address or other fields',
+    'Confusing parts of address with ID number',
   ],
 };
 
@@ -449,6 +473,9 @@ export const SEX_PATTERN: FieldPattern = {
 Extract the sex/gender:
 - Must be a single letter: "M" for male or "F" for female
 - Common locations: Near the "SEX:" or "SEX" label on the ID
+- MUST be consistent with the first digit of CNP:
+  * If first CNP digit is odd (1,3,5,7): sex must be "M"
+  * If first CNP digit is even (2,4,6,8): sex must be "F"
 `,
   variations: ['M', 'F'],
   validate: (value: string): boolean => {
@@ -461,6 +488,7 @@ Extract the sex/gender:
   commonErrors: [
     'Extracting full word (Masculin/Feminin) instead of single letter',
     'Lowercase instead of uppercase',
+    'Inconsistency with the CNP first digit',
   ],
 };
 
@@ -598,53 +626,92 @@ export function crossValidateFields(fields: Partial<RomanianIDFields>): {
     }
   }
 
-  // Cross-validate CNP with birth date and gender
+  // Birth date must be extracted from CNP, never looked for on the card
+  if (fields.data_nasterii && !fields.cnp) {
+    warnings.push(
+      'Birth date provided but no CNP - birth date should be derived from CNP'
+    );
+  }
+
+  // Cross-validate CNP with birth date
   if (fields.cnp && fields.data_nasterii) {
     const cnpDate = extractDateFromCNP(fields.cnp);
     if (cnpDate && cnpDate !== fields.data_nasterii) {
-      errors.push('CNP birth date does not match data_nasterii field');
+      errors.push(
+        `Birth date (${fields.data_nasterii}) does not match CNP-encoded date (${cnpDate}). CNP-encoded date must be used.`
+      );
+    }
+  }
+
+  // Cross-validate ID number format - must be exactly 6 digits
+  if (fields.numar) {
+    if (!/^\d{6}$/.test(fields.numar)) {
+      errors.push(
+        `ID number (${fields.numar}) must be exactly 6 digits with no letters or special characters`
+      );
     }
   }
 
   // Cross-validate CNP with sex
   if (fields.cnp && fields.sex) {
-    const firstDigit = parseInt(fields.cnp[0] || '0', 10);
-    const isMale = firstDigit % 2 === 1; // Odd first digit means male
-    const expectedSex = isMale ? 'M' : 'F';
+    // Make sure CNP is treated as a string
+    const cnp = String(fields.cnp);
 
-    if (fields.sex !== expectedSex) {
-      errors.push('CNP first digit does not match sex field');
+    if (cnp.length > 0) {
+      const firstDigit = parseInt(cnp.charAt(0), 10);
+      if (!isNaN(firstDigit)) {
+        const isMale = firstDigit % 2 === 1; // Odd first digit means male
+        const expectedSex = isMale ? 'M' : 'F';
+
+        if (fields.sex !== expectedSex) {
+          errors.push(
+            `CNP first digit (${cnp.charAt(0)}) indicates ${expectedSex} but sex field is ${fields.sex}`
+          );
+        }
+      }
     }
   }
 
-  // TODO: Check this as it may not be needed
-  // Validate seria and numar against birth place (county codes)
-  const seria = fields.seria;
+  // Cross-validate expiry date with birth date (from CNP) - day and month must match
+  if (fields.cnp && fields.valabil_pana_la) {
+    try {
+      // Extract birth date from CNP
+      const cnpDate = extractDateFromCNP(fields.cnp);
 
-  if (seria && fields.locul_nasterii) {
-    const birthPlace = fields.locul_nasterii;
+      if (cnpDate) {
+        // Extract birth day and month
+        const birthParts = cnpDate.split('.');
+        if (birthParts.length === 3) {
+          const birthDay = birthParts[0] ?? '';
+          const birthMonth = birthParts[1] ?? '';
 
-    // Common county code mappings
-    const countyCodes: Record<string, string[]> = {
-      B: ['BUCUREȘTI'],
-      CJ: ['CLUJ'],
-      BR: ['BRĂILA'],
-      IF: ['ILFOV'],
-      IL: ['IALOMIȚA'],
-      BV: ['BRAȘOV'],
-      TM: ['TIMIȘOARA'],
-      CT: ['CONSTANȚA'],
-      IS: ['IAȘI'],
-      BN: ['BISTRIȚA-NĂSĂUD'],
-    };
+          // Extract expiry day and month
+          const expiryParts = fields.valabil_pana_la.split('.');
+          if (expiryParts.length === 3) {
+            const expiryDay = expiryParts[0] ?? '';
+            const expiryMonth = expiryParts[1] ?? '';
 
-    const expectedCities = countyCodes[seria];
-    if (
-      expectedCities &&
-      !expectedCities.some((city: string) => birthPlace.includes(city))
-    ) {
-      warnings.push('Series code may not match birth place');
+            if (birthDay !== expiryDay || birthMonth !== expiryMonth) {
+              errors.push(
+                `Expiry date day/month (${expiryDay}.${expiryMonth}) must match birth day/month from CNP (${birthDay}.${birthMonth})`
+              );
+            }
+          }
+        }
+      }
+    } catch (error) {
+      // Skip validation if there's an error parsing dates
+      warnings.push(
+        'Could not validate day/month matching between birth date and expiry date'
+      );
     }
+  }
+
+  // Validate series format - must be only letters
+  if (fields.seria && !/^[A-Z]{1,3}$/.test(fields.seria)) {
+    errors.push(
+      `ID series (${fields.seria}) must contain only 1-3 uppercase letters, no digits or special characters`
+    );
   }
 
   // Validate date relationships
