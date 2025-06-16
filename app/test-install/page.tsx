@@ -1,7 +1,7 @@
 'use client';
 
 import { useInstallPrompt } from '../hooks/useInstallPrompt';
-import { getBrowserInstallInstructions } from '../../lib/pwa-utils';
+import { getBrowserInstallInstructions } from '../lib/pwa/pwa-utils';
 import InstallButton from '../components/InstallButton';
 
 export default function TestInstallPage() {
@@ -185,7 +185,7 @@ export default function TestInstallPage() {
               <div>
                 <span className="font-medium">Instructions:</span>
                 <ol className="mt-2 space-y-1 text-sm">
-                  {browserInstructions.steps.map((step, index) => (
+                  {browserInstructions.steps.map((step: string, index: number) => (
                     <li key={index} className="flex items-start">
                       <span className="inline-flex items-center justify-center w-5 h-5 bg-blue-100 text-blue-800 text-xs font-medium rounded-full mr-2 mt-0.5">
                         {index + 1}

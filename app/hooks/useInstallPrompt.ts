@@ -8,7 +8,7 @@ import {
   markInstallPromptDismissed,
   getIOSInstallInstructions,
   type PWAInstallCapabilities,
-} from '../../lib/pwa-utils';
+} from '../lib/pwa/pwa-utils';
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];

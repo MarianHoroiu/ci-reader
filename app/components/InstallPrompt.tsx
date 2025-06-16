@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useInstallPrompt } from '../hooks/useInstallPrompt';
-import { getBrowserInstallInstructions } from '../../lib/pwa-utils';
+import { getBrowserInstallInstructions } from '../lib/pwa/pwa-utils';
 import InstallButton from './InstallButton';
 import styles from '../styles/install-prompt.module.css';
 
@@ -121,7 +121,7 @@ export default function InstallPrompt({
         </div>
 
         <div className={styles.instructionsList}>
-          {browserInstructions.steps.map((step, index) => (
+          {browserInstructions.steps.map((step: string, index: number) => (
             <div key={index} className={styles.instructionItem}>
               <div className={styles.instructionNumber}>{index + 1}</div>
               <div className={styles.instructionText}>{step}</div>

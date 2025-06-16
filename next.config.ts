@@ -6,7 +6,7 @@ import {
   getStaticAssetSecurityHeaders,
   getManifestSecurityHeaders,
   isDevelopment,
-} from './lib/security-headers';
+} from './app/lib/pwa/security-headers';
 import { InjectManifest } from 'workbox-webpack-plugin';
 
 const nextConfig: NextConfig = {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateNonce } from './lib/security-headers';
+import { generateNonce } from './app/lib/pwa/security-headers';
 
 /**
  * Security Middleware for Romanian ID Processing PWA
