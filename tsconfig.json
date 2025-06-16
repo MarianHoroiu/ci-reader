@@ -36,13 +36,7 @@
     // Path Mapping
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./app/*"],
-      "@/components/*": ["./app/components/*"],
-      "@/lib/*": ["./app/lib/*"],
-      "@/types/*": ["./app/types/*"],
-      "@/utils/*": ["./app/utils/*"],
-      "@/hooks/*": ["./app/hooks/*"],
-      "@/styles/*": ["./app/styles/*"]
+      "@/*": ["./app/*"]
     },
 
     // Next.js specific

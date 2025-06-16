@@ -4,6 +4,7 @@ import './globals.css';
 import ServiceWorkerRegistration from './components/ServiceWorkerRegistration';
 import InstallPrompt from './components/InstallPrompt';
 import { SecurityProvider } from './components/SecurityProvider';
+import ErrorBoundary from './components/ErrorBoundary';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -104,16 +105,18 @@ export default function RootLayout({
         <meta name="msapplication-config" content="/browserconfig.xml" />
       </head>
       <body className="font-sans antialiased bg-gray-50 text-gray-900">
-        <SecurityProvider
-          enableCSPReporting={true}
-          enableSecurityMonitoring={true}
-        >
-          <ServiceWorkerRegistration />
-          <InstallPrompt variant="card" showAfterDelay={5000} />
-          <div id="root">
-            <main className="min-h-screen">{children}</main>
-          </div>
-        </SecurityProvider>
+        <ErrorBoundary>
+          <SecurityProvider
+            enableCSPReporting={true}
+            enableSecurityMonitoring={true}
+          >
+            <ServiceWorkerRegistration />
+            <InstallPrompt variant="card" showAfterDelay={5000} />
+            <div id="root">
+              <main className="min-h-screen">{children}</main>
+            </div>
+          </SecurityProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );
