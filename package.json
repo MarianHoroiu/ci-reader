@@ -14,7 +14,6 @@
   "license": "MIT",
   "scripts": {
     "dev": "next dev --turbo",
-    "dev:full": "bash scripts/start-ollama.sh && next dev --turbo",
     "dev:https": "next dev --turbo --experimental-https",
     "dev:https-custom": "npm run setup:certs && next dev --turbo --experimental-https-key ./certs/localhost-key.pem --experimental-https-cert ./certs/localhost.pem",
     "build": "next build",
