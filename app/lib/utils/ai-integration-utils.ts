@@ -100,6 +100,8 @@ export function processAIResponse(response: AIVisionOCRResponse): {
 
 /**
  * Format Romanian ID fields for display
+ * Field order optimized for logical information flow
+ * Ensures ALL fields are always present in consistent order
  */
 export function formatRomanianIDFields(fields: RomanianIDFields): Record<
   string,
@@ -110,7 +112,9 @@ export function formatRomanianIDFields(fields: RomanianIDFields): Record<
     tooltip?: string;
   }
 > {
-  return {
+  // Define the complete field order - this ensures consistent display regardless of extraction method
+  const fieldDefinitions = {
+    // Personal Information
     nume: {
       label: 'Nume',
       value: fields.nume,
@@ -121,12 +125,31 @@ export function formatRomanianIDFields(fields: RomanianIDFields): Record<
       value: fields.prenume,
       formatted: fields.prenume || 'Nu a fost detectat',
     },
+    // Birth Information
+    data_nasterii: {
+      label: 'Data Nașterii',
+      value: fields.data_nasterii,
+      formatted: fields.data_nasterii || 'Nu a fost detectată',
+      tooltip:
+        'Nu apare vizibil pe buletin, este extrasă din CNP (cifrele 2-7)',
+    },
+    locul_nasterii: {
+      label: 'Locul Nașterii',
+      value: fields.locul_nasterii,
+      formatted: fields.locul_nasterii || 'Nu a fost detectat',
+    },
+    // Identity Information
     cnp: {
       label: 'CNP',
       value: fields.cnp,
       formatted: fields.cnp || 'Nu a fost detectat',
       tooltip:
         'Codul Numeric Personal conține data nașterii și sexul codificate în primele cifre',
+    },
+    domiciliul: {
+      label: 'Domiciliul',
+      value: fields.domiciliul,
+      formatted: fields.domiciliul || 'Nu a fost detectat',
     },
     nationalitate: {
       label: 'Cetățenie',
@@ -140,22 +163,12 @@ export function formatRomanianIDFields(fields: RomanianIDFields): Record<
       tooltip:
         'Prima cifră din CNP trebuie să corespundă cu sexul (impară=M, pară=F)',
     },
-    data_nasterii: {
-      label: 'Data Nașterii',
-      value: fields.data_nasterii,
-      formatted: fields.data_nasterii || 'Nu a fost detectată',
-      tooltip:
-        'Nu apare vizibil pe buletin, este extrasă din CNP (cifrele 2-7)',
-    },
-    locul_nasterii: {
-      label: 'Locul Nașterii',
-      value: fields.locul_nasterii,
-      formatted: fields.locul_nasterii || 'Nu a fost detectat',
-    },
-    domiciliul: {
-      label: 'Domiciliul',
-      value: fields.domiciliul,
-      formatted: fields.domiciliul || 'Nu a fost detectat',
+    // Document Information
+    tip_document: {
+      label: 'Tip Document',
+      value: fields.tip_document || 'Carte de Identitate',
+      formatted: fields.tip_document || 'Carte de Identitate',
+      tooltip: 'Tipul documentului de identitate românesc',
     },
     seria: {
       label: 'Seria',
@@ -167,6 +180,7 @@ export function formatRomanianIDFields(fields: RomanianIDFields): Record<
       value: fields.numar,
       formatted: fields.numar || 'Nu a fost detectat',
     },
+    // Document Validity Information
     data_eliberarii: {
       label: 'Data Eliberării',
       value: fields.data_eliberarii,
@@ -185,6 +199,59 @@ export function formatRomanianIDFields(fields: RomanianIDFields): Record<
       formatted: fields.eliberat_de || 'Nu a fost detectat',
     },
   };
+
+  return fieldDefinitions;
+}
+
+/**
+ * Get ordered field keys for consistent display
+ * This ensures the same field order across all UI components
+ */
+export function getOrderedFieldKeys(): (keyof RomanianIDFields)[] {
+  return [
+    'nume',
+    'prenume',
+    'data_nasterii',
+    'locul_nasterii',
+    'cnp',
+    'domiciliul',
+    'nationalitate',
+    'sex',
+    'tip_document',
+    'seria',
+    'numar',
+    'data_eliberarii',
+    'valabil_pana_la',
+    'eliberat_de',
+  ];
+}
+
+/**
+ * Get formatted fields in guaranteed order
+ * This function ensures consistent field ordering regardless of extraction method
+ */
+export function getOrderedFormattedFields(fields: RomanianIDFields): Array<{
+  key: keyof RomanianIDFields;
+  field: {
+    label: string;
+    value: string | null;
+    formatted: string;
+    tooltip?: string;
+  };
+}> {
+  const formattedFields = formatRomanianIDFields(fields);
+  const orderedKeys = getOrderedFieldKeys();
+
+  return orderedKeys.map(key => {
+    const field = formattedFields[key];
+    if (!field) {
+      throw new Error(`Field definition missing for key: ${key}`);
+    }
+    return {
+      key,
+      field,
+    };
+  });
 }
 
 /**

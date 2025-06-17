@@ -21,6 +21,8 @@ export interface RomanianIDFields {
   locul_nasterii: string | null;
   /** Address/Domicile (Domiciliul) */
   domiciliul: string | null;
+  /** Tip Document */
+  tip_document: string | null;
   /** ID series (Seria) */
   seria: string | null;
   /** ID number (Numărul) */

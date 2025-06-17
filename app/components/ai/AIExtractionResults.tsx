@@ -12,9 +12,9 @@ import type {
   RomanianIDFields,
 } from '@/lib/types/romanian-id-types';
 import {
-  formatRomanianIDFields,
   generateExportData,
   downloadExportedData,
+  getOrderedFormattedFields,
 } from '@/lib/utils/ai-integration-utils';
 
 export interface AIExtractionResultsProps {
@@ -44,8 +44,6 @@ export default function AIExtractionResults({
   const [editedFields, setEditedFields] = useState<RomanianIDFields>(
     result.fields
   );
-
-  const formattedFields = formatRomanianIDFields(editedFields);
 
   /**
    * Handle field value change
@@ -170,70 +168,82 @@ export default function AIExtractionResults({
       {/* Fields */}
       <div className="p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {Object.entries(formattedFields).map(([fieldName, field]) => {
-            return (
-              <div key={fieldName} className="space-y-2">
-                <label className="text-sm font-medium text-gray-700 flex items-center">
-                  {field.label}
-                  {field.tooltip && (
-                    <div className="ml-1 group relative">
-                      <span className="inline-flex items-center justify-center w-4 h-4 bg-gray-200 text-gray-600 text-xs rounded-full hover:bg-gray-300 cursor-help">
-                        ?
-                      </span>
-                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-60 p-2 bg-gray-800 text-white text-xs rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity duration-200 z-10">
-                        {field.tooltip}
-                      </div>
-                    </div>
-                  )}
-                </label>
+          {getOrderedFormattedFields(editedFields).map(
+            ({ key: fieldName, field }) => {
+              return (
+                <div key={fieldName} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-sm font-medium text-gray-700">
+                      {field.label}
+                      {field.tooltip && (
+                        <span
+                          className="ml-1 text-gray-400 cursor-help"
+                          title={field.tooltip}
+                        >
+                          ⓘ
+                        </span>
+                      )}
+                    </label>
+                  </div>
 
-                <div className="relative">
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      value={
-                        editedFields[fieldName as keyof RomanianIDFields] || ''
-                      }
-                      onChange={e =>
-                        handleFieldChange(
-                          fieldName as keyof RomanianIDFields,
-                          e.target.value
-                        )
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder={`Introduceți ${field.label.toLowerCase()}`}
-                    />
-                  ) : (
-                    <div className="flex items-center">
-                      <div
-                        className={`flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 ${
-                          fieldName === 'data_nasterii' || fieldName === 'sex'
-                            ? 'border-blue-200 bg-blue-50'
-                            : ''
-                        }`}
-                      >
-                        {field.formatted}
-                        {fieldName === 'data_nasterii' && (
-                          <span className="ml-2 text-xs text-blue-600">
-                            (din CNP)
-                          </span>
+                  <div className="relative">
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={
+                          editedFields[fieldName as keyof RomanianIDFields] ||
+                          ''
+                        }
+                        onChange={e =>
+                          handleFieldChange(
+                            fieldName as keyof RomanianIDFields,
+                            e.target.value
+                          )
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder={`Introduceți ${field.label.toLowerCase()}`}
+                      />
+                    ) : (
+                      <div className="flex items-center">
+                        <div
+                          className={`flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 ${
+                            fieldName === 'data_nasterii' || fieldName === 'sex'
+                              ? 'border-blue-200 bg-blue-50'
+                              : ''
+                          } ${
+                            !field.value
+                              ? 'text-gray-500 italic border-red-200 bg-red-50'
+                              : ''
+                          }`}
+                        >
+                          {field.formatted}
+                          {fieldName === 'data_nasterii' && (
+                            <span className="ml-2 text-xs text-blue-600">
+                              (din CNP)
+                            </span>
+                          )}
+                          {!field.value && (
+                            <span className="ml-2 text-xs text-red-600">
+                              ⚠️ Nu a fost detectat
+                            </span>
+                          )}
+                        </div>
+                        {field.value && (
+                          <button
+                            onClick={() => handleCopyField(field.value)}
+                            className="ml-2 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                            title="Copiază în clipboard"
+                          >
+                            <Copy className="w-4 h-4" />
+                          </button>
                         )}
                       </div>
-                      {field.value && (
-                        <button
-                          onClick={() => handleCopyField(field.value)}
-                          className="ml-2 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                          title="Copiază în clipboard"
-                        >
-                          <Copy className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            }
+          )}
         </div>
       </div>
 

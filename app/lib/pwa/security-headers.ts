@@ -125,8 +125,6 @@ export function getGlobalSecurityHeaders(
         'camera=self',
         'microphone=self',
         'geolocation=self',
-        'notifications=self',
-        'push=self',
         'sync-xhr=self',
         'usb=self',
         'web-share=self',

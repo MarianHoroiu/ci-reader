@@ -462,3 +462,76 @@ This will show:
 - Ollama connection status
 - Available models
 - Whether your configured model is available
+
+## 🔄 Processing Comparison Feature
+
+The application now supports **dual processing modes** to compare results between local and cloud
+processing:
+
+### Processing Options
+
+1. **Local Processing (Ollama + Qwen2.5VL)**
+
+   - ✅ **Privacy**: All processing happens locally
+   - ✅ **Offline**: Works without internet
+   - ✅ **Free**: No API costs
+   - ⚠️ **Speed**: Depends on local hardware
+
+2. **Cloud Processing (LLM Whisperer)**
+
+   - ✅ **Accuracy**: Professional document processing
+   - ✅ **Speed**: Fast cloud processing
+   - ✅ **Quality**: Optimized for document OCR
+   - ⚠️ **Cost**: Requires API subscription
+   - ⚠️ **Privacy**: Data sent to cloud service
+
+3. **Comparison Mode**
+   - ✅ **Side-by-side results** from both services
+   - ✅ **Performance metrics** (processing time)
+   - ✅ **Quality comparison** for accuracy assessment
+
+### LLM Whisperer Setup
+
+1. **Get API Key**: Sign up at [LLM Whisperer](https://llmwhisperer.unstract.com/)
+
+2. **Configure Environment**:
+
+```bash
+# Add to .env.local
+LLMWHISPERER_BASE_URL=https://llmwhisperer-api.unstract.com/v1
+LLMWHISPERER_API_KEY=your_api_key_here
+```
+
+3. **Test Connection**:
+
+```bash
+# Check LLM Whisperer health
+npm run ai:health-whisperer
+
+# Compare both services
+npm run ai:compare
+```
+
+### Usage
+
+1. **Access Comparison**: Visit `/file-upload-comparison` or click "Compare Processing" on the
+   homepage
+2. **Upload Image**: Drag and drop or select a Romanian ID image
+3. **Choose Processing**:
+   - **Local Only**: Process with Ollama
+   - **Cloud Only**: Process with LLM Whisperer
+   - **Compare Both**: Run both and see results side-by-side
+4. **Review Results**: Compare accuracy, speed, and extracted data quality
+
+### Health Check Scripts
+
+```bash
+# Check Ollama status
+npm run ai:health-ollama
+
+# Check LLM Whisperer status
+npm run ai:health-whisperer
+
+# Test both services
+npm run ai:compare
+```

@@ -291,6 +291,30 @@ Extract the complete address (Domiciliul):
 };
 
 /**
+ * Tip Document extraction pattern
+ */
+export const TIP_DOCUMENT_PATTERN: FieldPattern = {
+  field: 'tip_document',
+  description: 'Tip Document (Carte de Identitate)',
+  pattern: /^Carte de Identitate$/,
+  instructions: `
+Extract the tip document:
+- Format: "Carte de Identitate"
+- Common format: "Carte de Identitate"
+- Located at the top of the ID, right after country name
+`,
+  variations: ['Carte de Identitate'],
+  validate: (value: string): boolean => {
+    if (!value || value.trim().length < 2) return false;
+    return true;
+  },
+  normalize: (value: string): string => {
+    return value.trim().toUpperCase();
+  },
+  commonErrors: ['Lowercase letters', 'Including the number part'],
+};
+
+/**
  * ID Series extraction pattern
  */
 export const SERIA_PATTERN: FieldPattern = {
@@ -504,6 +528,7 @@ export const FIELD_PATTERNS = {
   data_nasterii: DATE_PATTERN,
   locul_nasterii: BIRTH_PLACE_PATTERN,
   domiciliul: ADDRESS_PATTERN,
+  tip_document: TIP_DOCUMENT_PATTERN,
   seria: SERIA_PATTERN,
   numar: NUMAR_PATTERN,
   data_eliberarii: DATE_PATTERN,
