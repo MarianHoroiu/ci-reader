@@ -102,29 +102,13 @@ export default function FileUploadCloudPage() {
     setError(null);
   }, []);
 
-  const processingModes = [
-    {
-      id: 'form',
-      name: 'Form Mode',
-      description: 'Best for ID documents',
-      icon: <Cloud className="w-5 h-5 text-purple-600" />,
-    },
-    {
-      id: 'high_quality',
-      name: 'High Quality',
-      description: 'Slower, more accurate',
-      icon: <Cloud className="w-5 h-5 text-purple-600" />,
-    },
-    {
-      id: 'low_cost',
-      name: 'Low Cost',
-      description: 'Faster, less accurate',
-      icon: <Cloud className="w-5 h-5 text-purple-600" />,
-    },
-  ];
-
   return (
-    <FileUploadLayout title="Cloud Model Processing" mode="cloud">
+    <FileUploadLayout
+      title="Cloud Model Processing"
+      mode={
+        processingModes.find(mode => mode.id === processingMode)?.name || 'Form'
+      }
+    >
       {/* Upload Area */}
       {uploadedFiles.length === 0 && !isProcessing && !result && (
         <div className="mb-8">
@@ -140,7 +124,7 @@ export default function FileUploadCloudPage() {
       {/* Processing Mode Selector */}
       {uploadedFiles.length === 0 && !isProcessing && !result && (
         <div className="mb-8">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">
+          <h3 className="text-lg text-center font-medium text-gray-900 mb-4">
             Select Processing Mode
           </h3>
           <ProcessingModeSelector
@@ -233,3 +217,24 @@ export default function FileUploadCloudPage() {
     </FileUploadLayout>
   );
 }
+
+export const processingModes = [
+  {
+    id: 'form',
+    name: 'Form' as const,
+    description: 'Best for ID documents',
+    icon: <Cloud className="w-5 h-5 text-purple-600" />,
+  },
+  {
+    id: 'high_quality',
+    name: 'High-Quality' as const,
+    description: 'Slower, more accurate',
+    icon: <Cloud className="w-5 h-5 text-purple-600" />,
+  },
+  {
+    id: 'low_cost',
+    name: 'Low-Cost' as const,
+    description: 'Faster, less accurate',
+    icon: <Cloud className="w-5 h-5 text-purple-600" />,
+  },
+];

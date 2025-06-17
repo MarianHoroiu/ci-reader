@@ -24,7 +24,7 @@ export default function ProcessingModeSelector({
   className = '',
 }: ProcessingModeSelectorProps) {
   return (
-    <div className={`space-y-3 ${className}`}>
+    <div className={`flex justify-center space-x-3 ${className}`}>
       {modes.map(mode => {
         const isSelected = selectedMode === mode.id;
 

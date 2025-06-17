@@ -76,11 +76,6 @@ export default function ServiceWorkerRegistration({
         if (!event.isUpdate) {
           setSwState(prev => ({ ...prev, isRegistered: true }));
           onOfflineReady?.();
-
-          // Show offline ready notification
-          if (showUpdatePrompt) {
-            showNotification('App ready for offline use!', 'success');
-          }
         }
       });
 
@@ -144,53 +139,6 @@ export default function ServiceWorkerRegistration({
   const dismissUpdate = () => {
     setShowUpdateBanner(false);
     setSwState(prev => ({ ...prev, isUpdateAvailable: false }));
-  };
-
-  const showNotification = (
-    message: string,
-    type: 'success' | 'info' | 'warning' = 'info'
-  ) => {
-    // Create a simple toast notification
-    const toast = document.createElement('div');
-    toast.className = `sw-toast sw-toast-${type}`;
-    toast.textContent = message;
-
-    // Add styles
-    const styles = `
-      .sw-toast {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        padding: 12px 20px;
-        border-radius: 8px;
-        color: white;
-        font-weight: 500;
-        z-index: 10000;
-        animation: slideInRight 0.3s ease-out;
-      }
-      .sw-toast-success { background: #10b981; }
-      .sw-toast-info { background: #3b82f6; }
-      .sw-toast-warning { background: #f59e0b; }
-      @keyframes slideInRight {
-        from { transform: translateX(100%); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-      }
-    `;
-
-    // Add styles to head if not already present
-    if (!document.querySelector('#sw-toast-styles')) {
-      const styleSheet = document.createElement('style');
-      styleSheet.id = 'sw-toast-styles';
-      styleSheet.textContent = styles;
-      document.head.appendChild(styleSheet);
-    }
-
-    document.body.appendChild(toast);
-
-    // Remove after 4 seconds
-    setTimeout(() => {
-      toast.remove();
-    }, 4000);
   };
 
   // Don't render anything if service workers aren't supported

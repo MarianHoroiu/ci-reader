@@ -4,35 +4,17 @@ import React from 'react';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 
-interface FileUploadLayoutProps {
+export interface FileUploadLayoutProps {
   title: string;
-  mode: 'local' | 'cloud' | 'comparison';
+  mode: 'Form' | 'High-Quality' | 'Low-Cost';
   children: React.ReactNode;
 }
 
-const getModeConfig = (mode: string) => {
-  switch (mode) {
-    case 'local':
-      return {
-        badge: 'Local Mode',
-        badgeColor: 'bg-blue-200 text-emerald-800',
-      };
-    case 'cloud':
-      return {
-        badge: 'Cloud Mode',
-        badgeColor: 'bg-purple-100 text-purple-800',
-      };
-    case 'comparison':
-      return {
-        badge: 'Comparison Mode',
-        badgeColor: 'bg-emerald-100 text-emerald-800',
-      };
-    default:
-      return {
-        badge: 'Processing Mode',
-        badgeColor: 'bg-gray-100 text-gray-800',
-      };
-  }
+const getModeConfig = (processingMode: string) => {
+  return {
+    badge: `${processingMode} Mode`,
+    badgeColor: 'bg-blue-100 text-blue-800',
+  };
 };
 
 export default function FileUploadLayout({

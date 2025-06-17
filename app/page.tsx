@@ -15,11 +15,6 @@ export default function HomePage() {
                 Romanian ID Processing PWA
               </h1>
             </div>
-            <div className="flex items-center space-x-2">
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-status-success text-white">
-                Offline Ready
-              </span>
-            </div>
           </div>
         </div>
       </header>
