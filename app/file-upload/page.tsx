@@ -194,7 +194,9 @@ export default function FileUploadPage() {
       {result && result.data && (
         <AIExtractionResults
           result={result.data}
-          editable={false}
+          editable={true}
+          onClear={handleReset}
+          isNewData={true}
           className="mb-8"
         />
       )}

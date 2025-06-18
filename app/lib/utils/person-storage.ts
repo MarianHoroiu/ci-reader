@@ -71,8 +71,47 @@ export const PersonStorage = {
     sessionStorage.removeItem(STORAGE_KEY);
   },
 
+  updateStoredPerson(
+    id: string,
+    extractedData: RomanianIDExtractionResult
+  ): void {
+    const stored = this.getStoredPersons();
+    const personIndex = stored.findIndex(person => person.id === id);
+
+    if (personIndex !== -1) {
+      // Update existing person with new data and timestamp
+      stored[personIndex] = {
+        id, // Keep the same ID
+        timestamp: new Date().toISOString(), // Update timestamp
+        // Flatten all fields from extractedData.fields
+        nume: extractedData.fields.nume,
+        prenume: extractedData.fields.prenume,
+        cnp: extractedData.fields.cnp,
+        nationalitate: extractedData.fields.nationalitate,
+        sex: extractedData.fields.sex,
+        data_nasterii: extractedData.fields.data_nasterii,
+        locul_nasterii: extractedData.fields.locul_nasterii,
+        domiciliul: extractedData.fields.domiciliul,
+        tip_document: extractedData.fields.tip_document,
+        seria: extractedData.fields.seria,
+        numar: extractedData.fields.numar,
+        data_eliberarii: extractedData.fields.data_eliberarii,
+        valabil_pana_la: extractedData.fields.valabil_pana_la,
+        eliberat_de: extractedData.fields.eliberat_de,
+      };
+
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
+    }
+  },
+
   getPersonById(id: string): StoredPerson | null {
     const stored = this.getStoredPersons();
     return stored.find(person => person.id === id) || null;
+  },
+
+  findPersonByCNP(cnp: string | null): StoredPerson | null {
+    if (!cnp || cnp.trim() === '') return null;
+    const stored = this.getStoredPersons();
+    return stored.find(person => person.cnp === cnp.trim()) || null;
   },
 };

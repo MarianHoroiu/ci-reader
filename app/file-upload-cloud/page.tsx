@@ -194,7 +194,8 @@ export default function FileUploadCloudPage() {
       {result && result.data && (
         <AIExtractionResults
           result={result.data}
-          editable={false}
+          editable={true}
+          isNewData={true}
           className="mb-8"
         />
       )}
