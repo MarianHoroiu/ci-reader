@@ -34,6 +34,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.53.0",
     "axios": "^1.9.0",
+    "docx-templates": "^4.14.1",
     "framer-motion": "^12.15.0",
     "lucide-react": "^0.511.0",
     "next": "^15.0.0",

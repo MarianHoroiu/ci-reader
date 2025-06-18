@@ -20,6 +20,7 @@ export default function FillDocumentsPage() {
   const [selectedTemplate, setSelectedTemplate] =
     useState<DocumentTemplate | null>(null);
   const [templates, setTemplates] = useState<DocumentTemplate[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     const loadStoredPersons = () => {
@@ -64,15 +65,37 @@ export default function FillDocumentsPage() {
     return prenume ? `${nume}, ${prenume}` : nume;
   };
 
-  const handleFillDocument = () => {
+  const handleFillDocument = async () => {
     if (!selectedPerson || !selectedTemplate) return;
-    // This will be implemented later
-    console.log(
-      'Fill document:',
-      selectedTemplate.name,
-      'with person:',
-      formatPersonName(selectedPerson)
-    );
+
+    setIsProcessing(true);
+    try {
+      const response = await fetch('/api/fill-document', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          personData: selectedPerson,
+          templatePath: selectedTemplate.path,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fill document');
+      }
+
+      const result = await response.json();
+
+      // Show success message
+      alert(`Document "${result.filename}" has been saved to:\n${result.path}`);
+    } catch (error: any) {
+      console.error('Error filling document:', error);
+      alert(`Error: ${error.message}`);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -232,11 +255,13 @@ export default function FillDocumentsPage() {
           <div className="mt-8 text-center">
             <button
               onClick={handleFillDocument}
-              className="inline-flex items-center px-8 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-medium rounded-lg hover:from-emerald-700 hover:to-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+              disabled={isProcessing}
+              className="inline-flex items-center px-8 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-medium rounded-lg hover:from-emerald-700 hover:to-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
             >
               <FileText className="w-5 h-5 mr-2" />
-              Fill &ldquo;{selectedTemplate.name}&rdquo; with{' '}
-              {formatPersonName(selectedPerson)}&apos;s data
+              {isProcessing
+                ? 'Processing document...'
+                : `Fill "${selectedTemplate.name}" with ${formatPersonName(selectedPerson)}'s data`}
             </button>
           </div>
         )}

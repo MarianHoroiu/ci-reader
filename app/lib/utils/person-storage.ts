@@ -3,9 +3,21 @@ import type { RomanianIDExtractionResult } from '@/lib/types/romanian-id-types';
 export interface StoredPerson {
   id: string;
   timestamp: string;
+  // Flattened Romanian ID fields
   nume: string | null;
   prenume: string | null;
-  fullData: RomanianIDExtractionResult;
+  cnp: string | null;
+  nationalitate: string | null;
+  sex: string | null;
+  data_nasterii: string | null;
+  locul_nasterii: string | null;
+  domiciliul: string | null;
+  tip_document: string | null;
+  seria: string | null;
+  numar: string | null;
+  data_eliberarii: string | null;
+  valabil_pana_la: string | null;
+  eliberat_de: string | null;
 }
 
 const STORAGE_KEY = 'extractedPersons';
@@ -16,9 +28,21 @@ export const PersonStorage = {
     const person: StoredPerson = {
       id,
       timestamp: new Date().toISOString(),
+      // Flatten all fields from extractedData.fields
       nume: extractedData.fields.nume,
       prenume: extractedData.fields.prenume,
-      fullData: extractedData,
+      cnp: extractedData.fields.cnp,
+      nationalitate: extractedData.fields.nationalitate,
+      sex: extractedData.fields.sex,
+      data_nasterii: extractedData.fields.data_nasterii,
+      locul_nasterii: extractedData.fields.locul_nasterii,
+      domiciliul: extractedData.fields.domiciliul,
+      tip_document: extractedData.fields.tip_document,
+      seria: extractedData.fields.seria,
+      numar: extractedData.fields.numar,
+      data_eliberarii: extractedData.fields.data_eliberarii,
+      valabil_pana_la: extractedData.fields.valabil_pana_la,
+      eliberat_de: extractedData.fields.eliberat_de,
     };
 
     const stored = this.getStoredPersons();
