@@ -6,16 +6,12 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { Edit3, Save, X, Download, Copy } from 'lucide-react';
+import { Edit3, Save, Copy, Check, AlertCircle } from 'lucide-react';
 import type {
   RomanianIDExtractionResult,
   RomanianIDFields,
 } from '@/lib/types/romanian-id-types';
-import {
-  generateExportData,
-  downloadExportedData,
-  getOrderedFormattedFields,
-} from '@/lib/utils/ai-integration-utils';
+import { PersonStorage } from '@/lib/utils/person-storage';
 
 export interface AIExtractionResultsProps {
   /** Extraction result from AI processing */
@@ -24,8 +20,6 @@ export interface AIExtractionResultsProps {
   editable?: boolean;
   /** Callback when fields are updated */
   onFieldsUpdate?: (_fields: RomanianIDFields) => void;
-  /** Callback when export is requested */
-  onExport?: (_format: 'json' | 'csv' | 'txt') => void;
   /** Custom className */
   className?: string;
 }
@@ -37,13 +31,13 @@ export default function AIExtractionResults({
   result,
   editable = true,
   onFieldsUpdate,
-  onExport,
   className = '',
 }: AIExtractionResultsProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedFields, setEditedFields] = useState<RomanianIDFields>(
     result.fields
   );
+  const [isSaved, setIsSaved] = useState(false);
 
   /**
    * Handle field value change
@@ -61,51 +55,28 @@ export default function AIExtractionResults({
   /**
    * Save edited fields
    */
-  const handleSave = useCallback(() => {
-    setIsEditing(false);
-    onFieldsUpdate?.(editedFields);
-  }, [editedFields, onFieldsUpdate]);
-
-  /**
-   * Cancel editing
-   */
-  const handleCancel = useCallback(() => {
-    setIsEditing(false);
-    setEditedFields(result.fields);
-  }, [result.fields]);
-
-  /**
-   * Handle export
-   */
-  const handleExport = useCallback(
-    (format: 'json' | 'csv' | 'txt') => {
-      const exportData = generateExportData(
-        { ...result, fields: editedFields },
-        format
-      );
-
-      const timestamp = new Date().toISOString().split('T')[0];
-      const extension = format === 'txt' ? 'txt' : format;
-      const filename = `romanian-id-extraction-${timestamp}.${extension}`;
-
-      const mimeTypes = {
-        json: 'application/json',
-        csv: 'text/csv',
-        txt: 'text/plain',
+  const handleSave = useCallback(async () => {
+    try {
+      const updatedResult = {
+        ...result,
+        fields: editedFields,
       };
+      PersonStorage.saveExtractedPerson(updatedResult);
+      setIsSaved(true);
+      onFieldsUpdate?.(editedFields);
+      window.dispatchEvent(new CustomEvent('personsUpdated'));
 
-      downloadExportedData(exportData, filename, mimeTypes[format]);
-      onExport?.(format);
-    },
-    [result, editedFields, onExport]
-  );
+      setTimeout(() => setIsSaved(false), 2000);
+    } catch (error) {
+      console.error('Error saving person data:', error);
+    }
+  }, [result, editedFields, onFieldsUpdate]);
 
   /**
    * Copy field value to clipboard
    */
   const handleCopyField = useCallback(async (value: string | null) => {
     if (!value) return;
-
     try {
       await navigator.clipboard.writeText(value);
     } catch (err) {
@@ -113,175 +84,124 @@ export default function AIExtractionResults({
     }
   }, []);
 
-  return (
-    <div className={`bg-white rounded-lg border border-gray-200 ${className}`}>
-      {/* Header */}
-      <div className="p-6 border-b border-gray-200">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900">
-              Date Extrase din Buletin
-            </h2>
-          </div>
+  const formatFieldName = (fieldName: string): string => {
+    const fieldLabels: Record<string, string> = {
+      nume: 'Last Name',
+      prenume: 'First Name',
+      cnp: 'CNP',
+      nationalitate: 'Nationality',
+      sex: 'Gender',
+      data_nasterii: 'Birth Date',
+      locul_nasterii: 'Birth Place',
+      domiciliul: 'Address',
+      tip_document: 'Document Type',
+      seria: 'Series',
+      numar: 'Number',
+      data_eliberarii: 'Issue Date',
+      valabil_pana_la: 'Valid Until',
+      eliberat_de: 'Issued By',
+    };
+    return fieldLabels[fieldName] || fieldName;
+  };
 
-          {/* Edit toggle */}
+  const hasWarnings = result.metadata.warnings?.length > 0;
+
+  return (
+    <div className={`bg-white rounded-lg shadow-md border ${className}`}>
+      <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="flex items-center space-x-3">
+          <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+            <Check className="w-5 h-5 text-green-600" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">
+              Extraction Results
+            </h3>
+            <p className="text-sm text-gray-500">
+              Processing time: {result.metadata.processing_time}ms
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={handleSave}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+              isSaved
+                ? 'bg-green-100 text-green-700'
+                : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+            }`}
+            title="Save to storage"
+          >
+            <Save className="w-4 h-4" />
+            <span>{isSaved ? 'Saved!' : 'Save'}</span>
+          </button>
+
           {editable && (
             <button
               onClick={() => setIsEditing(!isEditing)}
-              className={`p-2 rounded-lg transition-colors ${
-                isEditing
-                  ? 'bg-red-100 text-red-600'
-                  : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
-              }`}
-              title={isEditing ? 'Anulează editarea' : 'Editează câmpurile'}
+              className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
             >
-              {isEditing ? (
-                <X className="w-4 h-4" />
-              ) : (
-                <Edit3 className="w-4 h-4" />
-              )}
+              <Edit3 className="w-4 h-4" />
+              <span>{isEditing ? 'Done' : 'Edit'}</span>
             </button>
           )}
-        </div>
 
-        {/* Action buttons */}
-        {isEditing && (
-          <div className="flex space-x-3">
-            <button
-              onClick={handleSave}
-              className="inline-flex items-center px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors"
-            >
-              <Save className="w-4 h-4 mr-2" />
-              Salvează
-            </button>
-            <button
-              onClick={handleCancel}
-              className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-colors"
-            >
-              <X className="w-4 h-4 mr-2" />
-              Anulează
-            </button>
-          </div>
-        )}
+          <button
+            onClick={() => handleCopyField(editedFields.cnp)}
+            className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            title="Copy CNP to clipboard"
+          >
+            <Copy className="w-4 h-4" />
+            <span>Copy CNP</span>
+          </button>
+        </div>
       </div>
 
-      {/* Fields */}
+      {hasWarnings && (
+        <div className="p-4 bg-yellow-50 border-b border-yellow-200">
+          <div className="flex items-start space-x-2">
+            <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
+            <div>
+              <h4 className="text-sm font-medium text-yellow-800">Warnings:</h4>
+              <ul className="mt-1 text-sm text-yellow-700 space-y-1">
+                {result.metadata.warnings?.map((warning, index) => (
+                  <li key={index}>• {warning}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {getOrderedFormattedFields(editedFields).map(
-            ({ key: fieldName, field }) => {
-              return (
-                <div key={fieldName} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="block text-sm font-medium text-gray-700">
-                      {field.label}
-                      {field.tooltip && (
-                        <span
-                          className="ml-1 text-gray-400 cursor-help"
-                          title={field.tooltip}
-                        >
-                          ⓘ
-                        </span>
-                      )}
-                    </label>
-                  </div>
-
-                  <div className="relative">
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        value={
-                          editedFields[fieldName as keyof RomanianIDFields] ||
-                          ''
-                        }
-                        onChange={e =>
-                          handleFieldChange(
-                            fieldName as keyof RomanianIDFields,
-                            e.target.value
-                          )
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder={`Introduceți ${field.label.toLowerCase()}`}
-                      />
-                    ) : (
-                      <div className="flex items-center">
-                        <div
-                          className={`flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 ${
-                            fieldName === 'data_nasterii' || fieldName === 'sex'
-                              ? 'border-blue-200 bg-blue-50'
-                              : ''
-                          } ${
-                            !field.value
-                              ? 'text-gray-500 italic border-red-200 bg-red-50'
-                              : ''
-                          }`}
-                        >
-                          {field.formatted}
-                          {fieldName === 'data_nasterii' && (
-                            <span className="ml-2 text-xs text-blue-600">
-                              (din CNP)
-                            </span>
-                          )}
-                          {!field.value && (
-                            <span className="ml-2 text-xs text-red-600">
-                              ⚠️ Nu a fost detectat
-                            </span>
-                          )}
-                        </div>
-                        {field.value && (
-                          <button
-                            onClick={() => handleCopyField(field.value)}
-                            className="ml-2 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                            title="Copiază în clipboard"
-                          >
-                            <Copy className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
+          {Object.entries(editedFields).map(([fieldName, value]) => (
+            <div key={fieldName} className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                {formatFieldName(fieldName)}
+              </label>
+              {isEditing ? (
+                <input
+                  type="text"
+                  value={value || ''}
+                  onChange={e =>
+                    handleFieldChange(
+                      fieldName as keyof RomanianIDFields,
+                      e.target.value
+                    )
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              ) : (
+                <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg">
+                  <span className={value ? 'text-gray-900' : 'text-gray-400'}>
+                    {value || 'Not detected'}
+                  </span>
                 </div>
-              );
-            }
-          )}
-        </div>
-      </div>
-
-      {/* Export section */}
-      <div className="p-6 border-t border-gray-200 bg-gray-50">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-sm font-medium text-gray-900 mb-1">
-              Exportă Datele
-            </h3>
-            <p className="text-xs text-gray-600">
-              Descarcă datele extrase în diferite formate
-            </p>
-          </div>
-
-          <div className="flex space-x-2">
-            <button
-              onClick={() => handleExport('json')}
-              className="inline-flex items-center px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <Download className="w-4 h-4 mr-1" />
-              JSON
-            </button>
-            <button
-              onClick={() => handleExport('csv')}
-              className="inline-flex items-center px-3 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
-            >
-              <Download className="w-4 h-4 mr-1" />
-              CSV
-            </button>
-            <button
-              onClick={() => handleExport('txt')}
-              className="inline-flex items-center px-3 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors"
-            >
-              <Download className="w-4 h-4 mr-1" />
-              TXT
-            </button>
-          </div>
+              )}
+            </div>
+          ))}
         </div>
       </div>
     </div>
