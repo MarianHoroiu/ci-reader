@@ -42,29 +42,20 @@ export default function FillDocumentsPage() {
     };
   }, []);
 
-  // Mock templates for now - will be replaced with actual file system integration
+  // Load templates from file system
   useEffect(() => {
-    const mockTemplates: DocumentTemplate[] = [
-      {
-        id: '1',
-        name: 'Employment Contract.docx',
-        path: '/Desktop/CI-Reader/Documents/Templates/Employment Contract.docx',
-        lastModified: '2025-01-27',
-      },
-      {
-        id: '2',
-        name: 'Bank Application.docx',
-        path: '/Desktop/CI-Reader/Documents/Templates/Bank Application.docx',
-        lastModified: '2025-01-26',
-      },
-      {
-        id: '3',
-        name: 'Insurance Form.docx',
-        path: '/Desktop/CI-Reader/Documents/Templates/Insurance Form.docx',
-        lastModified: '2025-01-25',
-      },
-    ];
-    setTemplates(mockTemplates);
+    const loadTemplates = async () => {
+      try {
+        const response = await fetch('/api/templates');
+        const data = await response.json();
+        setTemplates(data.templates || []);
+      } catch (error) {
+        console.error('Error loading templates:', error);
+        setTemplates([]);
+      }
+    };
+
+    loadTemplates();
   }, []);
 
   const formatPersonName = (person: StoredPerson): string => {
