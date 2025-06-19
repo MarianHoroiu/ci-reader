@@ -40,6 +40,7 @@
     "next": "^15.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "styled-jsx": "^5.1.7",
     "workbox-webpack-plugin": "^7.3.0",
     "workbox-window": "^7.3.0"
   },

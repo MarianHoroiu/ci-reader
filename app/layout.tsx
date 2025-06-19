@@ -5,6 +5,7 @@ import ServiceWorkerRegistration from './components/ServiceWorkerRegistration';
 import InstallPrompt from './components/InstallPrompt';
 import { SecurityProvider } from './components/SecurityProvider';
 import ErrorBoundary from './components/ErrorBoundary';
+import PWAOptimized from './components/PWAOptimized';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -110,11 +111,13 @@ export default function RootLayout({
             enableCSPReporting={true}
             enableSecurityMonitoring={true}
           >
-            <ServiceWorkerRegistration />
-            <InstallPrompt variant="card" showAfterDelay={5000} />
-            <div id="root">
-              <main className="min-h-screen">{children}</main>
-            </div>
+            <PWAOptimized>
+              <ServiceWorkerRegistration />
+              <InstallPrompt variant="card" showAfterDelay={5000} />
+              <div id="root">
+                <main className="min-h-screen">{children}</main>
+              </div>
+            </PWAOptimized>
           </SecurityProvider>
         </ErrorBoundary>
       </body>

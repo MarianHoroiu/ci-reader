@@ -256,7 +256,29 @@ export default function FillDocumentsPage() {
             <button
               onClick={handleFillDocument}
               disabled={isProcessing}
-              className="inline-flex items-center px-8 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-medium rounded-lg hover:from-emerald-700 hover:to-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              className="inline-flex items-center px-8 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-medium rounded-lg hover:from-emerald-700 hover:to-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:hover:shadow-lg min-h-[48px]"
+              style={{
+                background: isProcessing
+                  ? 'linear-gradient(to right, #059669, #0d9488)'
+                  : 'linear-gradient(to right, #059669, #0d9488)',
+                backgroundImage: 'linear-gradient(to right, #059669, #0d9488)',
+              }}
+              onMouseEnter={e => {
+                if (!isProcessing) {
+                  e.currentTarget.style.background =
+                    'linear-gradient(to right, #047857, #0f766e)';
+                  e.currentTarget.style.backgroundImage =
+                    'linear-gradient(to right, #047857, #0f766e)';
+                }
+              }}
+              onMouseLeave={e => {
+                if (!isProcessing) {
+                  e.currentTarget.style.background =
+                    'linear-gradient(to right, #059669, #0d9488)';
+                  e.currentTarget.style.backgroundImage =
+                    'linear-gradient(to right, #059669, #0d9488)';
+                }
+              }}
             >
               <FileText className="w-5 h-5 mr-2" />
               {isProcessing

@@ -70,6 +70,193 @@ body {
     user-select: text;
     -webkit-user-select: text;
   }
+
+  /* Fix button sizing and spacing issues in PWA mode */
+  .inline-flex {
+    /* Ensure consistent flex behavior */
+    display: -webkit-inline-flex !important;
+    display: inline-flex !important;
+  }
+
+  /* Fix button hover states in PWA */
+  button,
+  .btn-primary,
+  .btn-secondary,
+  [role='button'] {
+    /* Force hardware acceleration for smooth transitions */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    will-change: transform, background-color, box-shadow;
+
+    /* Ensure proper touch targets */
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Fix spacing issues between buttons */
+  .space-x-4 > * + * {
+    margin-left: 1rem !important;
+  }
+
+  .space-x-3 > * + * {
+    margin-left: 0.75rem !important;
+  }
+
+  .space-x-2 > * + * {
+    margin-left: 0.5rem !important;
+  }
+
+  /* Fix positioning for tooltips and copy buttons */
+  .relative {
+    position: relative !important;
+  }
+
+  .absolute {
+    position: absolute !important;
+  }
+
+  /* Fix z-index layering issues in PWA */
+  .z-50 {
+    z-index: 50 !important;
+  }
+
+  /* Fix gradient backgrounds in PWA - CRITICAL FIX */
+  .bg-gradient-to-r {
+    background: linear-gradient(to right, var(--tw-gradient-stops)) !important;
+    background-attachment: scroll !important;
+    -webkit-background-attachment: scroll !important;
+  }
+
+  .bg-gradient-to-br {
+    background: linear-gradient(
+      to bottom right,
+      var(--tw-gradient-stops)
+    ) !important;
+    background-attachment: scroll !important;
+    -webkit-background-attachment: scroll !important;
+  }
+
+  /* Specific gradient color fixes */
+  .from-emerald-600.to-teal-600 {
+    --tw-gradient-from: #059669 !important;
+    --tw-gradient-to: #0d9488 !important;
+    --tw-gradient-stops:
+      var(--tw-gradient-from), var(--tw-gradient-to) !important;
+    background: linear-gradient(to right, #059669, #0d9488) !important;
+  }
+
+  .hover\:from-emerald-700:hover.hover\:to-teal-700:hover {
+    background: linear-gradient(to right, #047857, #0f766e) !important;
+  }
+
+  .from-emerald-500.to-teal-600 {
+    --tw-gradient-from: #10b981 !important;
+    --tw-gradient-to: #0d9488 !important;
+    --tw-gradient-stops:
+      var(--tw-gradient-from), var(--tw-gradient-to) !important;
+    background: linear-gradient(to right, #10b981, #0d9488) !important;
+  }
+
+  /* Fix SVG fill colors in PWA */
+  svg {
+    fill: currentColor !important;
+  }
+
+  .text-white svg {
+    fill: white !important;
+    color: white !important;
+  }
+
+  .text-blue-600 svg {
+    fill: #2563eb !important;
+    color: #2563eb !important;
+  }
+
+  .text-emerald-600 svg {
+    fill: #059669 !important;
+    color: #059669 !important;
+  }
+
+  .text-gray-400 svg {
+    fill: #9ca3af !important;
+    color: #9ca3af !important;
+  }
+
+  .text-gray-300 svg {
+    fill: #d1d5db !important;
+    color: #d1d5db !important;
+  }
+
+  /* Fix shadow rendering in PWA */
+  .shadow-lg,
+  .shadow-xl,
+  .shadow-md {
+    -webkit-filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+  }
+
+  /* Fix transform animations in PWA */
+  .transform {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+  }
+
+  .hover\:-translate-y-0\.5:hover {
+    -webkit-transform: translateY(-0.125rem) translateZ(0);
+    transform: translateY(-0.125rem) translateZ(0);
+  }
+
+  /* Fix copy button positioning */
+  .absolute.right-2.top-1\/2 {
+    right: 0.5rem !important;
+    top: 50% !important;
+    transform: translateY(-50%) translateZ(0) !important;
+    -webkit-transform: translateY(-50%) translateZ(0) !important;
+  }
+
+  /* Fix toast positioning */
+  .absolute.-top-10.right-0 {
+    top: -2.5rem !important;
+    right: 0 !important;
+    transform: translateZ(0) !important;
+    -webkit-transform: translateZ(0) !important;
+  }
+
+  /* Fix modal positioning - CRITICAL FIX for overflow */
+  .fixed.inset-0 {
+    position: fixed !important;
+    top: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+  }
+
+  /* Fix modal content centering and prevent overflow */
+  .fixed.inset-0.flex.items-center.justify-center {
+    padding: 1rem !important;
+    box-sizing: border-box !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  /* Ensure modal doesn't exceed viewport */
+  .fixed.inset-0 .max-w-4xl {
+    max-height: calc(100vh - 2rem) !important;
+    max-width: calc(100vw - 2rem) !important;
+    margin: auto !important;
+  }
+
+  /* Fix flex layout in modals */
+  .flex.flex-col {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .overflow-y-auto.flex-1 {
+    overflow-y: auto !important;
+    flex: 1 !important;
+    min-height: 0 !important;
+  }
 }
 
 /* Loading States */
@@ -118,5 +305,47 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* Additional PWA Fixes for macOS */
+@supports (-webkit-appearance: none) {
+  /* WebKit specific fixes for macOS PWA */
+  @media (display-mode: standalone) {
+    /* Fix button appearance in Safari/WebKit PWA */
+    button,
+    input[type='button'],
+    input[type='submit'] {
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    /* Fix flex gap issues in WebKit */
+    .gap-4 {
+      gap: 1rem !important;
+    }
+
+    .gap-6 {
+      gap: 1.5rem !important;
+    }
+
+    .gap-8 {
+      gap: 2rem !important;
+    }
+
+    /* Fix viewport units in PWA */
+    .min-h-screen {
+      min-height: 100vh !important;
+      min-height: -webkit-fill-available !important;
+    }
+
+    /* Fix modal positioning */
+    .fixed.inset-0 {
+      position: fixed !important;
+      top: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      left: 0 !important;
+    }
   }
 }

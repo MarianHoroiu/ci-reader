@@ -49,13 +49,13 @@ export default function HomePage() {
               </svg>
             </Link>
 
-            <div className="flex space-x-4">
+            <div className="flex flex-col sm:flex-row items-center justify-center space-y-3 sm:space-y-0 sm:space-x-4">
               <Link
                 href="/stored-persons"
-                className="inline-flex items-center px-6 py-2.5 border border-primary-600 text-sm font-medium rounded-lg text-primary-600 bg-white hover:bg-primary-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors shadow-md hover:shadow-lg"
+                className="inline-flex items-center px-6 py-3 border border-primary-600 text-base font-medium rounded-lg text-primary-600 bg-white hover:bg-primary-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 min-w-[180px] justify-center"
               >
                 <svg
-                  className="mr-2 -ml-1 w-4 h-4"
+                  className="mr-2 -ml-1 w-5 h-5"
                   fill="currentColor"
                   viewBox="0 0 20 20"
                 >
@@ -66,10 +66,10 @@ export default function HomePage() {
 
               <Link
                 href="/fill-documents"
-                className="inline-flex items-center px-6 py-2.5 border border-emerald-600 text-sm font-medium rounded-lg text-emerald-600 bg-white hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors shadow-md hover:shadow-lg"
+                className="inline-flex items-center px-6 py-3 border border-emerald-600 text-base font-medium rounded-lg text-emerald-600 bg-white hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 min-w-[180px] justify-center"
               >
                 <svg
-                  className="mr-2 -ml-1 w-4 h-4"
+                  className="mr-2 -ml-1 w-5 h-5"
                   fill="currentColor"
                   viewBox="0 0 20 20"
                 >
