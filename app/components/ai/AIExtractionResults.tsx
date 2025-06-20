@@ -276,26 +276,26 @@ export default function AIExtractionResults({
 
   return (
     <div className={`bg-white rounded-lg shadow-md border ${className}`}>
-      <div className="flex items-center justify-between p-6 border-b border-gray-200">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-            <Check className="w-5 h-5 text-green-600" />
+      <div className="flex items-center justify-between p-4 border-b border-gray-200">
+        <div className="flex items-center space-x-2">
+          <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
+            <Check className="w-4 h-4 text-green-600" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">
+            <h3 className="text-base font-semibold text-gray-900">
               Extraction Results
             </h3>
-            <p className="text-sm text-gray-500">
+            <p className="text-xs text-gray-500">
               Processing time: {result.metadata.processing_time}ms
             </p>
           </div>
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1">
           <button
             onClick={() => handleSave()}
             disabled={!hasChanges}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+            className={`flex items-center space-x-1 px-2 py-1.5 text-sm rounded transition-colors ${
               isSaved
                 ? 'bg-green-100 text-green-700'
                 : hasChanges
@@ -304,27 +304,27 @@ export default function AIExtractionResults({
             }`}
             title={hasChanges ? 'Save to storage' : 'No changes to save'}
           >
-            <Save className="w-4 h-4" />
+            <Save className="w-3 h-3" />
             <span>{isSaved ? 'Saved!' : 'Save'}</span>
           </button>
 
           {onClear && (
             <button
               onClick={onClear}
-              className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+              className="flex items-center space-x-1 px-2 py-1.5 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
               title="Clear and start over"
             >
-              <X className="w-4 h-4" />
-              <span>Clear & Start Over</span>
+              <X className="w-3 h-3" />
+              <span>Clear</span>
             </button>
           )}
 
           {editable && !isEditing && (
             <button
               onClick={handleStartEdit}
-              className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+              className="flex items-center space-x-1 px-2 py-1.5 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
             >
-              <Edit3 className="w-4 h-4" />
+              <Edit3 className="w-3 h-3" />
               <span>Edit</span>
             </button>
           )}
@@ -332,9 +332,9 @@ export default function AIExtractionResults({
           {editable && isEditing && (
             <button
               onClick={handleCancel}
-              className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+              className="flex items-center space-x-1 px-2 py-1.5 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
             >
-              <X className="w-4 h-4" />
+              <X className="w-3 h-3" />
               <span>Cancel</span>
             </button>
           )}
@@ -342,12 +342,12 @@ export default function AIExtractionResults({
       </div>
 
       {hasWarnings && (
-        <div className="p-4 bg-yellow-50 border-b border-yellow-200">
+        <div className="p-3 bg-yellow-50 border-b border-yellow-200">
           <div className="flex items-start space-x-2">
-            <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
+            <AlertCircle className="w-4 h-4 text-yellow-600 mt-0.5" />
             <div>
-              <h4 className="text-sm font-medium text-yellow-800">Warnings:</h4>
-              <ul className="mt-1 text-sm text-yellow-700 space-y-1">
+              <h4 className="text-xs font-medium text-yellow-800">Warnings:</h4>
+              <ul className="mt-1 text-xs text-yellow-700 space-y-0.5">
                 {importantWarnings.map((warning, index) => (
                   <li key={index}>• {warning}</li>
                 ))}
@@ -357,11 +357,11 @@ export default function AIExtractionResults({
         </div>
       )}
 
-      <div className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="p-4">
+        <div className="grid grid-cols-1 gap-3">
           {Object.entries(editedFields).map(([fieldName, value]) => (
-            <div key={fieldName} className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
+            <div key={fieldName} className="space-y-1">
+              <label className="block text-xs font-medium text-gray-600">
                 {formatFieldName(fieldName)}
               </label>
               {isEditing ? (
@@ -374,11 +374,11 @@ export default function AIExtractionResults({
                       e.target.value
                     )
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                 />
               ) : (
                 <div className="relative">
-                  <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg pr-10">
+                  <div className="px-2 py-1.5 bg-gray-50 border border-gray-200 rounded pr-8 text-sm">
                     <span className={value ? 'text-gray-900' : 'text-gray-400'}>
                       {value || 'Not detected'}
                     </span>
@@ -386,15 +386,15 @@ export default function AIExtractionResults({
                   {value && (
                     <button
                       onClick={() => copyToClipboard(value, fieldName)}
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 p-0.5 text-gray-400 hover:text-gray-600 transition-colors"
                       title="Copy to clipboard"
                     >
-                      <Copy className="w-4 h-4" />
+                      <Copy className="w-3 h-3" />
                     </button>
                   )}
                   {/* Contextual Copy Success Toast */}
                   {copySuccess && copySuccess.fieldName === fieldName && (
-                    <div className="absolute -top-10 right-0 bg-green-600 text-white px-3 py-1 rounded text-sm shadow-lg z-50 flex items-center space-x-2 whitespace-nowrap">
+                    <div className="absolute -top-8 right-0 bg-green-600 text-white px-2 py-1 rounded text-xs shadow-lg z-50 flex items-center space-x-1 whitespace-nowrap">
                       <Check className="w-3 h-3" />
                       <span>{copySuccess.message}</span>
                     </div>

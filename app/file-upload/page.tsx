@@ -6,12 +6,12 @@ import type { AIVisionOCRResponse } from '@/lib/types/romanian-id-types';
 import AIExtractionResults from '@/components/ai/AIExtractionResults';
 import FileUploadLayout from '@/components/upload/FileUploadLayout';
 import FileDropZone from '@/components/upload/FileDropZone';
-import FilePreviewCard from '@/components/upload/FilePreviewCard';
 import ProcessingStatusCard from '@/components/upload/ProcessingStatusCard';
 import StandardProcessingButton from '@/components/upload/StandardProcessingButton';
 import ErrorBoundaryCard from '@/components/upload/ErrorBoundaryCard';
 import InstructionsCard from '@/components/upload/InstructionsCard';
 import ProcessingModeSelector from '@/components/upload/ProcessingModeSelector';
+import Image from 'next/image';
 
 export default function FileUploadPage() {
   const [uploadedFiles, setUploadedFiles] = useState<any[]>([]);
@@ -41,25 +41,6 @@ export default function FileUploadPage() {
       setCurrentFile(newFile);
     },
     [uploadedFiles]
-  );
-
-  const removeFile = useCallback(
-    (id: string) => {
-      setUploadedFiles(prev => {
-        const updated = prev.filter(f => f.id !== id);
-        const removedFile = prev.find(f => f.id === id);
-        if (removedFile) {
-          URL.revokeObjectURL(removedFile.preview);
-        }
-        return updated;
-      });
-      if (currentFile?.id === id) {
-        setCurrentFile(null);
-        setResult(null);
-        setError(null);
-      }
-    },
-    [currentFile]
   );
 
   const processWithWhisperer = useCallback(
@@ -109,7 +90,7 @@ export default function FileUploadPage() {
         processingModes.find(mode => mode.id === processingMode)?.name || 'Form'
       }
     >
-      {/* Upload Area */}
+      {/* Upload Area - Only shown when no files uploaded */}
       {uploadedFiles.length === 0 && !isProcessing && !result && (
         <div className="mb-8">
           <FileDropZone
@@ -121,7 +102,7 @@ export default function FileUploadPage() {
         </div>
       )}
 
-      {/* Processing Mode Selector */}
+      {/* Processing Mode Selector - Only shown when no files uploaded */}
       {uploadedFiles.length === 0 && !isProcessing && !result && (
         <div className="mb-8">
           <h3 className="text-lg text-center font-medium text-gray-900 mb-4">
@@ -137,71 +118,98 @@ export default function FileUploadPage() {
         </div>
       )}
 
-      {/* Uploaded Files */}
-      {uploadedFiles.length > 0 && !isProcessing && !result && (
+      {/* Two-Column Layout for Extraction Process */}
+      {uploadedFiles.length > 0 && (
         <div className="mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            Uploaded Files ({uploadedFiles.length})
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {uploadedFiles.map(uploadedFile => (
-              <FilePreviewCard
-                key={uploadedFile.id}
-                file={uploadedFile}
-                onRemove={removeFile}
-                isSelected={currentFile?.id === uploadedFile.id}
-                onSelect={setCurrentFile}
-              >
-                <StandardProcessingButton
-                  icon={<Cloud className="w-6 h-6" />}
-                  text={
-                    isProcessing
-                      ? 'Processing...'
-                      : 'Process with Cloud AI Model'
-                  }
-                  modelName="LLM Whisperer API"
-                  color="purple"
-                  onClick={handleProcess}
-                  disabled={isProcessing}
-                  size="sm"
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Left Column - ID Card Image */}
+            <div className="space-y-4 text-center">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                ID Card Image
+              </h3>
+              {currentFile && (
+                <div className="bg-white rounded-lg shadow-md border overflow-hidden">
+                  <div className="aspect-[16/10] relative">
+                    <Image
+                      src={currentFile.preview}
+                      alt="Uploaded ID Card"
+                      width={800}
+                      height={800}
+                      className="object-contain bg-gray-50"
+                    />
+                  </div>
+                  <div className="p-4 border-t">
+                    <p className="text-sm text-gray-600 truncate">
+                      {currentFile.file.name}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {(currentFile.file.size / (1024 * 1024)).toFixed(1)} MB
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Right Column - Processing Controls & Results */}
+            <div className="space-y-4 text-center">
+              {/* <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                Processing & Results
+              </h3> */}
+
+              {/* Processing Button - Only shown when file uploaded but not processing and no results */}
+              {!isProcessing && !result && !error && (
+                <div className="h-full flex items-center justify-center">
+                  <StandardProcessingButton
+                    icon={<Cloud className="w-6 h-6" />}
+                    text="Process using Artificial Intelligence"
+                    modelName="LLM Whisperer API"
+                    color="purple"
+                    onClick={handleProcess}
+                    disabled={isProcessing}
+                    size="lg"
+                  />
+                </div>
+              )}
+
+              {/* Processing Status */}
+              {isProcessing && (
+                <div className="h-full flex items-center justify-center">
+                  <ProcessingStatusCard
+                    isProcessing={isProcessing}
+                    title="Processing..."
+                    description="Document is being analyzed using Cloud Model of Artificial Intelligence"
+                    onCancel={handleReset}
+                  />
+                </div>
+              )}
+
+              {/* Error State */}
+              {error && (
+                <ErrorBoundaryCard
+                  error={error}
+                  onReset={handleReset}
+                  title="Processing Error"
                 />
-              </FilePreviewCard>
-            ))}
+              )}
+
+              {/* Extraction Results */}
+              {result && result.data && (
+                <div className="h-full">
+                  <AIExtractionResults
+                    result={result.data}
+                    editable={true}
+                    onClear={handleReset}
+                    isNewData={true}
+                    className="h-full max-h-[800px] overflow-auto"
+                  />
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
 
-      {/* Processing Status */}
-      <ProcessingStatusCard
-        isProcessing={isProcessing}
-        title="Processing..."
-        description="Document is being analyzed using Cloud Model of Artificial Intelligence"
-        onCancel={handleReset}
-        className="mb-8"
-      />
-
-      {/* Error State */}
-      {error && (
-        <ErrorBoundaryCard
-          error={error}
-          onReset={handleReset}
-          title="Processing Error"
-          className="mb-8"
-        />
-      )}
-
-      {/* Extraction Results */}
-      {result && result.data && (
-        <AIExtractionResults
-          result={result.data}
-          editable={true}
-          onClear={handleReset}
-          isNewData={true}
-          className="mb-8"
-        />
-      )}
-
-      {/* Instructions */}
+      {/* Instructions - Only shown when no files uploaded */}
       {!isProcessing && !result && uploadedFiles.length === 0 && (
         <InstructionsCard
           type="warning"
