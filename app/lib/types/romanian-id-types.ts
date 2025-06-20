@@ -24,9 +24,9 @@ export interface RomanianIDFields {
   /** Tip Document */
   tip_document: string | null;
   /** ID series (Seria) */
-  seria: string | null;
+  seria_buletin: string | null;
   /** ID number (Numărul) */
-  numar: string | null;
+  numar_buletin: string | null;
   /** Issue date (Data eliberării) */
   data_eliberarii: string | null;
   /** Validity date (Valabil până la) - Day and month must match birth date (from CNP) */

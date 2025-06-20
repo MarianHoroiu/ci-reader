@@ -174,8 +174,8 @@ ADDRESSES (domiciliul):
 
 SERIA (ID Series):
 - Extract only the letter part of the ID series
-- Usually 2 uppercase letters representing county code
-- Example: "RX" (from "RX 123456")
+- Usually 2 uppercase letters representing county code, but might also be one uppercase letter
+- Example: "RX" (from "RX 123456") or "B" (from "B 436625")
 - Preserve exact case (usually uppercase)
 
 NUMĂRUL (ID Number):

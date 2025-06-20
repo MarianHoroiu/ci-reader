@@ -209,8 +209,8 @@ The Romanian ID card contains multilingual labels (Romanian/French/English). Ext
 - locul_nasterii: Birth place/location
 - domiciliul: Complete address including street number
 - tip_document: Always "Carte de Identitate"
-- seria: Document series (1-3 letters)
-- numar: 6-digit document number
+- seria_buletin: Document series (1 or 2 capital letters)
+- numar_buletin: 6-digit document number
 - data_eliberarii: Issue date in DD.MM.YYYY format
 - valabil_pana_la: Expiry date in DD.MM.YYYY format  
 - eliberat_de: Issuing authority name

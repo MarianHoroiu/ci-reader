@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Users, FileText, Plus } from 'lucide-react';
 import Link from 'next/link';
-import { PersonStorage, type StoredPerson } from '@/lib/utils/person-storage';
+import { type StoredPerson } from '@/lib/db/database';
+import { usePersonStorage } from '@/hooks/usePersonStorage';
 
 interface DocumentTemplate {
   id: string;
@@ -13,7 +14,6 @@ interface DocumentTemplate {
 }
 
 export default function FillDocumentsPage() {
-  const [storedPersons, setStoredPersons] = useState<StoredPerson[]>([]);
   const [selectedPerson, setSelectedPerson] = useState<StoredPerson | null>(
     null
   );
@@ -22,26 +22,8 @@ export default function FillDocumentsPage() {
   const [templates, setTemplates] = useState<DocumentTemplate[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  useEffect(() => {
-    const loadStoredPersons = () => {
-      setStoredPersons(PersonStorage.getStoredPersons());
-    };
-
-    loadStoredPersons();
-
-    // Listen for storage changes
-    const handleStorageChange = () => {
-      loadStoredPersons();
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('personsUpdated', handleStorageChange);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('personsUpdated', handleStorageChange);
-    };
-  }, []);
+  // Use the new Dexie-based storage hook
+  const { persons: storedPersons } = usePersonStorage();
 
   // Load templates from file system
   useEffect(() => {

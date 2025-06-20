@@ -11,7 +11,8 @@ import type {
   RomanianIDExtractionResult,
   RomanianIDFields,
 } from '@/lib/types/romanian-id-types';
-import { PersonStorage, type StoredPerson } from '@/lib/utils/person-storage';
+import { type StoredPerson } from '@/lib/db/database';
+import { usePersonStorage } from '@/hooks/usePersonStorage';
 
 export interface AIExtractionResultsProps {
   /** Extraction result from AI processing */
@@ -57,6 +58,9 @@ export default function AIExtractionResults({
     message: string;
   } | null>(null);
 
+  // Use the new Dexie-based storage hook
+  const { addPersonFromExtraction, findPersonByCNP } = usePersonStorage();
+
   // Track changes when fields are edited
   useEffect(() => {
     if (isNewData) {
@@ -65,6 +69,9 @@ export default function AIExtractionResults({
         const fieldsChanged =
           JSON.stringify(editedFields) !== JSON.stringify(originalFields);
         setHasChanges(fieldsChanged);
+      } else {
+        // For new data that hasn't been saved yet, enable save button by default
+        setHasChanges(true);
       }
     } else {
       // For existing data: only enable when changes are made
@@ -73,19 +80,6 @@ export default function AIExtractionResults({
       setHasChanges(fieldsChanged);
     }
   }, [editedFields, originalFields, isNewData, isSaved]);
-
-  // Check for duplicate CNP when component loads (only for new data)
-  useEffect(() => {
-    if (isNewData && editedFields.cnp) {
-      const existingPerson = PersonStorage.findPersonByCNP(editedFields.cnp);
-      if (existingPerson) {
-        setDuplicateInfo({
-          existingPerson,
-          show: true,
-        });
-      }
-    }
-  }, [isNewData, editedFields.cnp]);
 
   /**
    * Handle field value change
@@ -124,26 +118,68 @@ export default function AIExtractionResults({
   }, [editedFields]);
 
   /**
-   * Save edited fields
+   * Save edited fields, bypassing duplicate check if forced
    */
-  const handleSave = useCallback(async () => {
-    try {
-      const updatedResult = {
-        ...result,
-        fields: editedFields,
-      };
-      PersonStorage.saveExtractedPerson(updatedResult);
-      setIsSaved(true);
-      setHasChanges(false);
-      setOriginalFields(editedFields); // Update original fields to current state
-      onFieldsUpdate?.(editedFields);
-      window.dispatchEvent(new CustomEvent('personsUpdated'));
+  const handleSave = useCallback(
+    async (forceSave = false) => {
+      try {
+        // Check for duplicates first (only if this is new data and not forced)
+        if (isNewData && editedFields.cnp && !forceSave) {
+          const duplicateResult = await findPersonByCNP(editedFields.cnp);
+          if (duplicateResult.success && duplicateResult.person) {
+            setDuplicateInfo({
+              existingPerson: duplicateResult.person,
+              show: true,
+            });
+            return; // Don't save, let user decide
+          }
+        }
 
-      setTimeout(() => setIsSaved(false), 2000);
-    } catch (error) {
-      console.error('Error saving person data:', error);
-    }
-  }, [result, editedFields, onFieldsUpdate]);
+        // Create extraction result format and use the dedicated method
+        const extractionResult: RomanianIDExtractionResult = {
+          fields: editedFields,
+          metadata: result.metadata, // Use original metadata
+        };
+
+        const saveResult = await addPersonFromExtraction(extractionResult);
+        if (saveResult.success) {
+          setIsSaved(true);
+          setHasChanges(false);
+          setOriginalFields(editedFields); // Update original fields to current state
+          setDuplicateInfo(null); // Close duplicate modal if open
+          onFieldsUpdate?.(editedFields);
+
+          setTimeout(() => setIsSaved(false), 2000);
+        } else {
+          console.error('Error saving person data:', saveResult.error);
+        }
+      } catch (error) {
+        console.error('Error saving person data:', error);
+      }
+    },
+    [
+      editedFields,
+      onFieldsUpdate,
+      addPersonFromExtraction,
+      isNewData,
+      findPersonByCNP,
+      result.metadata,
+    ]
+  );
+
+  /**
+   * Handle saving anyway despite duplicate warning
+   */
+  const handleSaveAnyway = useCallback(() => {
+    handleSave(true);
+  }, [handleSave]);
+
+  /**
+   * Handle dismissing the duplicate modal
+   */
+  const handleDismissDuplicate = useCallback(() => {
+    setDuplicateInfo(null);
+  }, []);
 
   const formatFieldName = (fieldName: string): string => {
     const fieldLabels: Record<string, string> = {
@@ -156,8 +192,8 @@ export default function AIExtractionResults({
       locul_nasterii: 'Birth Place',
       domiciliul: 'Address',
       tip_document: 'Document Type',
-      seria: 'Series',
-      numar: 'Number',
+      seria_buletin: 'Series',
+      numar_buletin: 'Number',
       data_eliberarii: 'Issue Date',
       valabil_pana_la: 'Valid Until',
       eliberat_de: 'Issued By',
@@ -219,7 +255,7 @@ export default function AIExtractionResults({
 
         <div className="flex items-center space-x-2">
           <button
-            onClick={handleSave}
+            onClick={() => handleSave()}
             disabled={!hasChanges}
             className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
               isSaved
@@ -364,12 +400,18 @@ export default function AIExtractionResults({
                 You can still save this data if you want to keep both entries,
                 or you can clear and start over.
               </p>
-              <div className="flex justify-end">
+              <div className="flex justify-end space-x-3">
                 <button
-                  onClick={() => setDuplicateInfo(null)}
+                  onClick={handleDismissDuplicate}
+                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveAnyway}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
-                  Got it
+                  Save Anyway
                 </button>
               </div>
             </div>

@@ -318,19 +318,19 @@ Extract the tip document:
  * ID Series extraction pattern
  */
 export const SERIA_PATTERN: FieldPattern = {
-  field: 'seria',
+  field: 'seria_buletin',
   description: 'ID series county code',
-  pattern: /^[A-Z]{1,3}$/,
+  pattern: /^[A-Z]{1,2}$/,
   instructions: `
 Extract the ID series:
-- Format: County Code (1-3 letters)
-- Common codes: RX, CJ, BV, TM, CT, etc.
+- Format: County Code (1 or 2 capital letters)
+- Common codes: B, IF, RX, CJ, BV, TM, CT, etc.
 - Preserve exact case (usually uppercase)
 `,
   variations: ['RX', 'CJ', 'BV', 'TM', 'CT'],
   validate: (value: string): boolean => {
     if (!value) return false;
-    return /^[A-Z]{1,3}$/.test(value);
+    return /^[A-Z]{1,2}$/.test(value);
   },
   normalize: (value: string): string => {
     return value.trim().toUpperCase();
@@ -342,7 +342,7 @@ Extract the ID series:
  * ID Number extraction pattern
  */
 export const NUMAR_PATTERN: FieldPattern = {
-  field: 'numar',
+  field: 'numar_buletin',
   description: 'ID number (exactly 6 digits)',
   pattern: /^\d{6}$/,
   instructions: `
@@ -529,8 +529,8 @@ export const FIELD_PATTERNS = {
   locul_nasterii: BIRTH_PLACE_PATTERN,
   domiciliul: ADDRESS_PATTERN,
   tip_document: TIP_DOCUMENT_PATTERN,
-  seria: SERIA_PATTERN,
-  numar: NUMAR_PATTERN,
+  seria_buletin: SERIA_PATTERN,
+  numar_buletin: NUMAR_PATTERN,
   data_eliberarii: DATE_PATTERN,
   valabil_pana_la: DATE_PATTERN,
   eliberat_de: AUTHORITY_PATTERN,
@@ -669,10 +669,10 @@ export function crossValidateFields(fields: Partial<RomanianIDFields>): {
   }
 
   // Cross-validate ID number format - must be exactly 6 digits
-  if (fields.numar) {
-    if (!/^\d{6}$/.test(fields.numar)) {
+  if (fields.numar_buletin) {
+    if (!/^\d{6}$/.test(fields.numar_buletin)) {
       errors.push(
-        `ID number (${fields.numar}) must be exactly 6 digits with no letters or special characters`
+        `ID number (${fields.numar_buletin}) must be exactly 6 digits with no letters or special characters`
       );
     }
   }
@@ -733,9 +733,9 @@ export function crossValidateFields(fields: Partial<RomanianIDFields>): {
   }
 
   // Validate series format - must be only letters
-  if (fields.seria && !/^[A-Z]{1,3}$/.test(fields.seria)) {
+  if (fields.seria_buletin && !/^[A-Z]{1,2}$/.test(fields.seria_buletin)) {
     errors.push(
-      `ID series (${fields.seria}) must contain only 1-3 uppercase letters, no digits or special characters`
+      `ID series (${fields.seria_buletin}) must contain only 1 or 2 uppercase letters, no digits or special characters`
     );
   }
 
@@ -825,13 +825,15 @@ function addFieldSpecificValidation(
       }
       break;
 
-    case 'seria':
-      if (!/^[A-Z]{1,3}$/.test(value)) {
-        errors.push('Series must be exactly 2 uppercase letters (e.g., "XR")');
+    case 'seria_buletin':
+      if (!/^[A-Z]{1,2}$/.test(value)) {
+        errors.push(
+          'Series must be exactly 1 or 2 uppercase letters (e.g., "XR")'
+        );
       }
       break;
 
-    case 'numar':
+    case 'numar_buletin':
       if (!/^\d{6}$/.test(value)) {
         errors.push('Number must be exactly 6 digits');
       }

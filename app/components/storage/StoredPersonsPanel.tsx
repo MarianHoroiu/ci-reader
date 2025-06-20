@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { Users, Trash2, ChevronDown, ChevronUp, Edit3 } from 'lucide-react';
-import { PersonStorage, type StoredPerson } from '@/lib/utils/person-storage';
+import { type StoredPerson } from '@/lib/db/database';
+import { usePersonStorage } from '@/hooks/usePersonStorage';
 import AIExtractionResults from '@/components/ai/AIExtractionResults';
 import type { RomanianIDExtractionResult } from '@/lib/types/romanian-id-types';
 
@@ -15,7 +16,6 @@ export default function StoredPersonsPanel({
   className = '',
   alwaysExpanded = false,
 }: StoredPersonsPanelProps) {
-  const [storedPersons, setStoredPersons] = useState<StoredPerson[]>([]);
   const [isExpanded, setIsExpanded] = useState(alwaysExpanded);
   const [editingPerson, setEditingPerson] = useState<StoredPerson | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -26,9 +26,18 @@ export default function StoredPersonsPanel({
   const [clearAllConfirm, setClearAllConfirm] = useState(false);
   const [isInEditMode, setIsInEditMode] = useState(false);
 
+  // Use the new Dexie-based storage hook
+  const {
+    persons: storedPersons,
+    deletePerson,
+    clearAllPersons,
+    updatePerson,
+  } = usePersonStorage();
+
+  // Listen for edit mode changes
   useEffect(() => {
     const handleEditModeChange = (event: any) => {
-      setIsInEditMode(event.detail?.isEditing || false);
+      setIsInEditMode(event.detail.isEditing);
     };
 
     window.addEventListener('editModeChanged', handleEditModeChange);
@@ -38,49 +47,30 @@ export default function StoredPersonsPanel({
     };
   }, []);
 
-  useEffect(() => {
-    const loadStoredPersons = () => {
-      setStoredPersons(PersonStorage.getStoredPersons());
-    };
-
-    loadStoredPersons();
-
-    // Listen for storage changes
-    const handleStorageChange = () => {
-      loadStoredPersons();
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-
-    // Custom event for same-tab updates
-    window.addEventListener('personsUpdated', handleStorageChange);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('personsUpdated', handleStorageChange);
-    };
-  }, []);
-
   const handleRemovePerson = (id: string) => {
     setDeleteConfirm(id);
   };
 
-  const confirmDelete = (id: string) => {
-    PersonStorage.removeStoredPerson(id);
-    setStoredPersons(PersonStorage.getStoredPersons());
-    window.dispatchEvent(new CustomEvent('personsUpdated'));
-    setDeleteConfirm(null);
+  const confirmDelete = async (id: string) => {
+    const result = await deletePerson(id);
+    if (result.success) {
+      setDeleteConfirm(null);
+    } else {
+      console.error('Failed to delete person:', result.error);
+    }
   };
 
   const handleClearAll = () => {
     setClearAllConfirm(true);
   };
 
-  const confirmClearAll = () => {
-    PersonStorage.clearAllPersons();
-    setStoredPersons([]);
-    window.dispatchEvent(new CustomEvent('personsUpdated'));
-    setClearAllConfirm(false);
+  const confirmClearAll = async () => {
+    const result = await clearAllPersons();
+    if (result.success) {
+      setClearAllConfirm(false);
+    } else {
+      console.error('Failed to clear all persons:', result.error);
+    }
   };
 
   const handleEditPerson = (person: StoredPerson) => {
@@ -89,52 +79,59 @@ export default function StoredPersonsPanel({
 
   const handleCloseEdit = () => {
     setEditingPerson(null);
-    setIsInEditMode(false);
   };
 
   const handleUpdatePerson = (personId: string, fields: any) => {
     setSaveConfirm({ personId, fields });
   };
 
-  const confirmSave = () => {
+  const confirmSave = async () => {
     if (!saveConfirm) return;
 
-    const updatedResult: RomanianIDExtractionResult = {
-      fields: saveConfirm.fields,
-      metadata: {
-        processing_time: 0,
-        model: 'stored',
-        image_quality: 'good' as const,
-        warnings: [],
-      },
+    // Convert the fields to the correct format for Dexie storage
+    const updates = {
+      nume: saveConfirm.fields.nume || '',
+      prenume: saveConfirm.fields.prenume || '',
+      cnp: saveConfirm.fields.cnp || '',
+      nationalitate: saveConfirm.fields.nationalitate || '',
+      domiciliu:
+        saveConfirm.fields.domiciliul || saveConfirm.fields.domiciliu || '',
+      tip_document: saveConfirm.fields.tip_document || '',
+      seria_buletin: saveConfirm.fields.seria_buletin || '',
+      numar_buletin: saveConfirm.fields.numar_buletin || '',
+      valabilitate: saveConfirm.fields.valabil_pana_la || '',
+      emis_de: saveConfirm.fields.eliberat_de || '',
+      data_eliberarii: saveConfirm.fields.data_eliberarii || '',
     };
 
-    PersonStorage.updateStoredPerson(saveConfirm.personId, updatedResult);
-    setStoredPersons(PersonStorage.getStoredPersons());
-    handleCloseEdit();
-    setSaveConfirm(null);
-    window.dispatchEvent(new CustomEvent('personsUpdated'));
+    const result = await updatePerson(saveConfirm.personId, updates);
+    if (result.success) {
+      setSaveConfirm(null);
+      setEditingPerson(null);
+    } else {
+      console.error('Failed to update person:', result.error);
+    }
   };
 
   const convertPersonToExtractionResult = (
     person: StoredPerson
   ): RomanianIDExtractionResult => {
-    return {
+    const result = {
       fields: {
         nume: person.nume,
         prenume: person.prenume,
         cnp: person.cnp,
         nationalitate: person.nationalitate,
+        domiciliul: person.domiciliu,
+        seria_buletin: person.seria_buletin,
+        numar_buletin: person.numar_buletin,
+        valabil_pana_la: person.valabilitate,
+        eliberat_de: person.emis_de,
+        data_eliberarii: person.data_eliberarii,
+        tip_document: person.tip_document,
         sex: person.sex,
         data_nasterii: person.data_nasterii,
         locul_nasterii: person.locul_nasterii,
-        domiciliul: person.domiciliul,
-        tip_document: person.tip_document,
-        seria: person.seria,
-        numar: person.numar,
-        data_eliberarii: person.data_eliberarii,
-        valabil_pana_la: person.valabil_pana_la,
-        eliberat_de: person.eliberat_de,
       },
       metadata: {
         processing_time: 0,
@@ -143,12 +140,14 @@ export default function StoredPersonsPanel({
         warnings: [],
       },
     };
+
+    return result;
   };
 
   const formatName = (person: StoredPerson): string => {
-    const nume = person.nume || 'Unknown';
+    const nume = person.nume || '';
     const prenume = person.prenume || '';
-    return prenume ? `${nume}, ${prenume}` : nume;
+    return `${nume} ${prenume}`.trim() || 'Unknown Person';
   };
 
   if (storedPersons.length === 0) {
@@ -226,26 +225,29 @@ export default function StoredPersonsPanel({
 
       {/* Edit Modal */}
       {editingPerson && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-full flex flex-col">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
-              <h2 className="text-xl font-semibold text-gray-900">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full h-full sm:h-auto sm:max-h-[95vh] sm:max-w-4xl flex flex-col pwa-edit-modal">
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 flex-shrink-0 modal-header">
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
                 {isInEditMode ? 'Edit Person Data' : 'View Person Data'}
               </h2>
               <button
                 onClick={handleCloseEdit}
-                className="text-gray-400 hover:text-gray-600 text-2xl"
+                className="text-gray-400 hover:text-gray-600 text-xl sm:text-2xl p-1 hover:bg-gray-100 rounded-full transition-colors"
+                title="Close"
               >
                 ×
               </button>
             </div>
-            <div className="p-6 overflow-y-auto flex-1">
+            <div className="p-4 sm:p-6 overflow-y-auto flex-1 min-h-0 modal-body">
               <AIExtractionResults
                 result={convertPersonToExtractionResult(editingPerson)}
                 editable={true}
                 onFieldsUpdate={fields =>
                   handleUpdatePerson(editingPerson.id, fields)
                 }
+                isNewData={false}
+                className="max-w-none"
               />
             </div>
           </div>

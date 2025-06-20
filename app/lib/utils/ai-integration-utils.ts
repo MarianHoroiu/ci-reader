@@ -170,15 +170,15 @@ export function formatRomanianIDFields(fields: RomanianIDFields): Record<
       formatted: fields.tip_document || 'Carte de Identitate',
       tooltip: 'Tipul documentului de identitate românesc',
     },
-    seria: {
+    seria_buletin: {
       label: 'Seria',
-      value: fields.seria,
-      formatted: fields.seria || 'Nu a fost detectată',
+      value: fields.seria_buletin,
+      formatted: fields.seria_buletin || 'Nu a fost detectată',
     },
     numar: {
       label: 'Numărul',
-      value: fields.numar,
-      formatted: fields.numar || 'Nu a fost detectat',
+      value: fields.numar_buletin,
+      formatted: fields.numar_buletin || 'Nu a fost detectat',
     },
     // Document Validity Information
     data_eliberarii: {
@@ -218,8 +218,8 @@ export function getOrderedFieldKeys(): (keyof RomanianIDFields)[] {
     'nationalitate',
     'sex',
     'tip_document',
-    'seria',
-    'numar',
+    'seria_buletin',
+    'numar_buletin',
     'data_eliberarii',
     'valabil_pana_la',
     'eliberat_de',

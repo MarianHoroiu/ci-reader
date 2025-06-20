@@ -382,8 +382,8 @@ export function validateRomanianIDData(fields: {
   sex?: string | null;
   data_eliberarii?: string | null;
   valabil_pana_la?: string | null;
-  seria?: string | null;
-  numar?: string | null;
+  seria_buletin?: string | null;
+  numar_buletin?: string | null;
 }): { isValid: boolean; errors: string[]; warnings: string[] } {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -422,17 +422,19 @@ export function validateRomanianIDData(fields: {
   }
 
   // 4. ID number format validation
-  if (fields.numar) {
-    if (!/^\d{6}$/.test(fields.numar)) {
-      errors.push(`ID number (${fields.numar}) must be exactly 6 digits`);
+  if (fields.numar_buletin) {
+    if (!/^\d{6}$/.test(fields.numar_buletin)) {
+      errors.push(
+        `ID number (${fields.numar_buletin}) must be exactly 6 digits`
+      );
     }
   }
 
   // 5. Series format validation
-  if (fields.seria) {
-    if (!/^[A-Z]{1,3}$/.test(fields.seria)) {
+  if (fields.seria_buletin) {
+    if (!/^[A-Z]{1,2}$/.test(fields.seria_buletin)) {
       errors.push(
-        `ID series (${fields.seria}) must be 1-3 uppercase letters only`
+        `ID series (${fields.seria_buletin}) must be 1 or 2 uppercase letters only`
       );
     }
   }

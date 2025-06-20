@@ -1,34 +1,14 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { ArrowLeft, Users } from 'lucide-react';
 import Link from 'next/link';
-import { PersonStorage, type StoredPerson } from '@/lib/utils/person-storage';
+import { usePersonStorage } from '@/hooks/usePersonStorage';
 import StoredPersonsPanel from '@/components/storage/StoredPersonsPanel';
 
 export default function StoredPersonsPage() {
-  const [storedPersons, setStoredPersons] = useState<StoredPerson[]>([]);
-
-  useEffect(() => {
-    const loadStoredPersons = () => {
-      setStoredPersons(PersonStorage.getStoredPersons());
-    };
-
-    loadStoredPersons();
-
-    // Listen for storage changes
-    const handleStorageChange = () => {
-      loadStoredPersons();
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('personsUpdated', handleStorageChange);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('personsUpdated', handleStorageChange);
-    };
-  }, []);
+  // Use the new Dexie-based storage hook
+  const { persons: storedPersons } = usePersonStorage();
 
   return (
     <div className="min-h-screen bg-gray-50">
