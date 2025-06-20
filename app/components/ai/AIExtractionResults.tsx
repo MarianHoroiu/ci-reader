@@ -27,6 +27,8 @@ export interface AIExtractionResultsProps {
   isNewData?: boolean;
   /** Custom className */
   className?: string;
+  /** Person ID for existing persons (enables update instead of create) */
+  personId?: string;
 }
 
 /**
@@ -39,6 +41,7 @@ export default function AIExtractionResults({
   onClear,
   isNewData = false,
   className = '',
+  personId,
 }: AIExtractionResultsProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedFields, setEditedFields] = useState<RomanianIDFields>(
@@ -59,7 +62,8 @@ export default function AIExtractionResults({
   } | null>(null);
 
   // Use the new Dexie-based storage hook
-  const { addPersonFromExtraction, findPersonByCNP } = usePersonStorage();
+  const { addPersonFromExtraction, updatePerson, findPersonByCNP } =
+    usePersonStorage();
 
   // Track changes when fields are edited
   useEffect(() => {
@@ -135,13 +139,35 @@ export default function AIExtractionResults({
           }
         }
 
-        // Create extraction result format and use the dedicated method
-        const extractionResult: RomanianIDExtractionResult = {
-          fields: editedFields,
-          metadata: result.metadata, // Use original metadata
-        };
+        let saveResult;
 
-        const saveResult = await addPersonFromExtraction(extractionResult);
+        if (personId) {
+          // Update existing person
+          const updates = {
+            nume: editedFields.nume || '',
+            prenume: editedFields.prenume || '',
+            cnp: editedFields.cnp || '',
+            nationalitate: editedFields.nationalitate || '',
+            sex: editedFields.sex || '',
+            data_nasterii: editedFields.data_nasterii || '',
+            locul_nasterii: editedFields.locul_nasterii || '',
+            domiciliu: editedFields.domiciliul || '',
+            tip_document: editedFields.tip_document || '',
+            seria_buletin: editedFields.seria_buletin || '',
+            numar_buletin: editedFields.numar_buletin || '',
+            valabilitate: editedFields.valabil_pana_la || '',
+            emis_de: editedFields.eliberat_de || '',
+            data_eliberarii: editedFields.data_eliberarii || '',
+          };
+          saveResult = await updatePerson(personId, updates);
+        } else {
+          // Create new person
+          const extractionResult: RomanianIDExtractionResult = {
+            fields: editedFields,
+            metadata: result.metadata,
+          };
+          saveResult = await addPersonFromExtraction(extractionResult);
+        }
         if (saveResult.success) {
           setIsSaved(true);
           setHasChanges(false);
@@ -161,6 +187,8 @@ export default function AIExtractionResults({
       editedFields,
       onFieldsUpdate,
       addPersonFromExtraction,
+      updatePerson,
+      personId,
       isNewData,
       findPersonByCNP,
       result.metadata,

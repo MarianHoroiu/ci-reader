@@ -247,6 +247,7 @@ export default function StoredPersonsPanel({
                   handleUpdatePerson(editingPerson.id, fields)
                 }
                 isNewData={false}
+                personId={editingPerson.id}
                 className="max-w-none"
               />
             </div>
