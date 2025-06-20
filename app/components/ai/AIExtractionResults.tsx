@@ -127,6 +127,8 @@ export default function AIExtractionResults({
   const handleSave = useCallback(
     async (forceSave = false) => {
       try {
+        let existingPersonId = personId;
+
         // Check for duplicates first (only if this is new data and not forced)
         if (isNewData && editedFields.cnp && !forceSave) {
           const duplicateResult = await findPersonByCNP(editedFields.cnp);
@@ -139,9 +141,17 @@ export default function AIExtractionResults({
           }
         }
 
+        // If this is new data and we found a duplicate (forceSave = true), update the existing person
+        if (isNewData && editedFields.cnp && forceSave) {
+          const duplicateResult = await findPersonByCNP(editedFields.cnp);
+          if (duplicateResult.success && duplicateResult.person) {
+            existingPersonId = duplicateResult.person.id;
+          }
+        }
+
         let saveResult;
 
-        if (personId) {
+        if (existingPersonId) {
           // Update existing person
           const updates = {
             nume: editedFields.nume || '',
@@ -159,7 +169,7 @@ export default function AIExtractionResults({
             emis_de: editedFields.eliberat_de || '',
             data_eliberarii: editedFields.data_eliberarii || '',
           };
-          saveResult = await updatePerson(personId, updates);
+          saveResult = await updatePerson(existingPersonId, updates);
         } else {
           // Create new person
           const extractionResult: RomanianIDExtractionResult = {
