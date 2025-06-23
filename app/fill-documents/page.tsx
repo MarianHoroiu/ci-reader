@@ -21,6 +21,10 @@ export default function FillDocumentsPage() {
     useState<DocumentTemplate | null>(null);
   const [templates, setTemplates] = useState<DocumentTemplate[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [generatedDocument, setGeneratedDocument] = useState<{
+    filename: string;
+    path: string;
+  } | null>(null);
 
   // Use the new Dexie-based storage hook
   const { persons: storedPersons } = usePersonStorage();
@@ -47,6 +51,36 @@ export default function FillDocumentsPage() {
     return prenume ? `${nume}, ${prenume}` : nume;
   };
 
+  const handleOpenDocument = async () => {
+    if (generatedDocument) {
+      try {
+        // Open the file with the system's default application
+        const response = await fetch('/api/open-document', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            filePath: generatedDocument.path,
+          }),
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          // Success - file opened with default application
+          console.log('File opened successfully');
+        } else {
+          // Show error message
+          alert(`Error opening document:\n${result.error}`);
+        }
+      } catch (error) {
+        console.error('Error opening document:', error);
+        alert(`Error opening document:\n${error}`);
+      }
+    }
+  };
+
   const handleFillDocument = async () => {
     if (!selectedPerson || !selectedTemplate) return;
 
@@ -70,8 +104,11 @@ export default function FillDocumentsPage() {
 
       const result = await response.json();
 
-      // Show success message
-      alert(`Document "${result.filename}" has been saved to:\n${result.path}`);
+      // Store the generated document info
+      setGeneratedDocument({
+        filename: result.filename,
+        path: result.path,
+      });
     } catch (error: any) {
       console.error('Error filling document:', error);
       console.log('Selected person data:', selectedPerson);
@@ -159,7 +196,10 @@ export default function FillDocumentsPage() {
                   {storedPersons.map(person => (
                     <div
                       key={person.id}
-                      onClick={() => setSelectedPerson(person)}
+                      onClick={() => {
+                        setSelectedPerson(person);
+                        setGeneratedDocument(null);
+                      }}
                       className={`p-4 border-b border-gray-100 cursor-pointer transition-colors hover:bg-blue-50 ${
                         selectedPerson?.id === person.id
                           ? 'bg-blue-50 border-blue-200'
@@ -217,7 +257,10 @@ export default function FillDocumentsPage() {
                   {templates.map(template => (
                     <div
                       key={template.id}
-                      onClick={() => setSelectedTemplate(template)}
+                      onClick={() => {
+                        setSelectedTemplate(template);
+                        setGeneratedDocument(null);
+                      }}
                       className={`p-4 border-b border-gray-100 cursor-pointer transition-colors hover:bg-emerald-50 ${
                         selectedTemplate?.id === template.id
                           ? 'bg-emerald-50 border-emerald-200'
@@ -251,7 +294,7 @@ export default function FillDocumentsPage() {
             <button
               onClick={handleFillDocument}
               disabled={isProcessing}
-              className="inline-flex items-center px-8 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-medium rounded-lg hover:from-emerald-700 hover:to-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:hover:shadow-lg min-h-[48px]"
+              className="inline-flex items-center justify-center w-full sm:w-auto px-6 sm:px-8 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-medium rounded-lg hover:from-emerald-700 hover:to-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:hover:shadow-lg min-h-[48px] max-w-full"
               style={{
                 background: isProcessing
                   ? 'linear-gradient(to right, #059669, #0d9488)'
@@ -275,10 +318,12 @@ export default function FillDocumentsPage() {
                 }
               }}
             >
-              <FileText className="w-5 h-5 mr-2" />
-              {isProcessing
-                ? 'Processing document...'
-                : `Fill "${selectedTemplate.name}" with ${formatPersonName(selectedPerson)}'s data`}
+              <FileText className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0" />
+              <span className="text-center text-sm sm:text-base">
+                {isProcessing
+                  ? 'Processing document...'
+                  : `Fill "${selectedTemplate.name}" with ${formatPersonName(selectedPerson)}'s data`}
+              </span>
             </button>
           </div>
         )}
@@ -311,6 +356,21 @@ export default function FillDocumentsPage() {
             </div>
           </div>
         </div>
+
+        {/* Generated Document Button */}
+        {generatedDocument && (
+          <div className="mt-6 text-center">
+            <button
+              onClick={handleOpenDocument}
+              className="inline-flex items-center justify-center w-full sm:w-auto px-6 sm:px-8 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-medium rounded-lg hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 min-h-[48px] max-w-full"
+            >
+              <FileText className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0" />
+              <span className="text-center text-sm sm:text-base">
+                {`Open "${generatedDocument.filename}"`}
+              </span>
+            </button>
+          </div>
+        )}
       </main>
     </div>
   );

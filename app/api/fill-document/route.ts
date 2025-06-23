@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
     const timestamp = `${year}.${month}.${day}_${hours}.${minutes}`;
-    const outputFilename = `${personName}_${timestamp}.docx`;
+    const outputFilename = `${templateName}_${personName}_${timestamp}.docx`;
 
     // Create output directory path
     const documentsPath = '/Users/mario/Desktop/CI-Reader/Documents';
