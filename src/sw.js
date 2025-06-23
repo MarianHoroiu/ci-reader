@@ -297,6 +297,7 @@ self.addEventListener('activate', event => {
       })
       .then(() => {
         console.log('✅ Service Worker: Activated securely');
+
         return self.clients.claim();
       })
   );
@@ -493,12 +494,15 @@ self.addEventListener('message', event => {
 
   if (event.data && typeof event.data === 'object') {
     if (event.data.type === 'SKIP_WAITING') {
+      console.log(
+        '🔄 Service Worker: Skipping waiting and activating new version'
+      );
       self.skipWaiting();
     }
 
     if (event.data.type === 'GET_VERSION') {
       event.ports[0].postMessage({
-        version: 'romanian-id-pwa-v3-workbox',
+        version: 'romanian-id-pwa-v4-workbox',
         timestamp: Date.now(),
         security: true,
         workbox: true,

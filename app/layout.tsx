@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import ServiceWorkerRegistration from './components/ServiceWorkerRegistration';
-import InstallPrompt from './components/InstallPrompt';
 import { SecurityProvider } from './components/SecurityProvider';
 import ErrorBoundary from './components/ErrorBoundary';
 import PWAOptimized from './components/PWAOptimized';
@@ -113,7 +112,6 @@ export default function RootLayout({
           >
             <PWAOptimized>
               <ServiceWorkerRegistration />
-              <InstallPrompt variant="card" showAfterDelay={5000} />
               <div id="root">
                 <main className="min-h-screen">{children}</main>
               </div>

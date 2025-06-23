@@ -32,9 +32,11 @@ export default function StoredPersonsPage() {
                 </h1>
               </div>
             </div>
-            <div className="text-sm text-gray-500">
-              {storedPersons.length} person
-              {storedPersons.length !== 1 ? 's' : ''} stored
+            <div className="flex items-center space-x-4">
+              <div className="text-sm text-gray-500">
+                {storedPersons.length} person
+                {storedPersons.length !== 1 ? 's' : ''} stored
+              </div>
             </div>
           </div>
         </div>

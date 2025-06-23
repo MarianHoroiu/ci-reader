@@ -186,14 +186,16 @@ export default function FillDocumentsPage() {
                 {storedPersons.length !== 1 ? 's' : ''} • {templates.length}{' '}
                 template{templates.length !== 1 ? 's' : ''}
               </div>
-              <button
-                onClick={handleOpenDocumentsFolder}
-                className="inline-flex items-center px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-gray-900 text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-                title="Open Documents folder"
-              >
-                <FolderOpen className="w-4 h-4 mr-1.5" />
-                <span className="hidden sm:inline">Documents</span>
-              </button>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={handleOpenDocumentsFolder}
+                  className="inline-flex items-center px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-gray-900 text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                  title="Open Documents folder"
+                >
+                  <FolderOpen className="w-4 h-4 mr-1.5" />
+                  <span className="hidden sm:inline">Documents</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
