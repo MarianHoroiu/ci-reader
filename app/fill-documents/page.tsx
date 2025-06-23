@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Users, FileText, Plus } from 'lucide-react';
+import { ArrowLeft, Users, FileText, Plus, FolderOpen } from 'lucide-react';
 import Link from 'next/link';
 import { type StoredPerson } from '@/lib/db/database';
 import { usePersonStorage } from '@/hooks/usePersonStorage';
@@ -81,6 +81,34 @@ export default function FillDocumentsPage() {
     }
   };
 
+  const handleOpenDocumentsFolder = async () => {
+    try {
+      // Open the Documents folder with the system's default file manager
+      const response = await fetch('/api/open-folder', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          folderPath: '/Users/mario/Desktop/CI-Reader/Documents',
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        // Success - folder opened with default file manager
+        console.log('Documents folder opened successfully');
+      } else {
+        // Show error message
+        alert(`Error opening Documents folder:\n${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error opening Documents folder:', error);
+      alert(`Error opening Documents folder:\n${error}`);
+    }
+  };
+
   const handleFillDocument = async () => {
     if (!selectedPerson || !selectedTemplate) return;
 
@@ -152,10 +180,20 @@ export default function FillDocumentsPage() {
                 </h1>
               </div>
             </div>
-            <div className="text-sm text-gray-500">
-              {storedPersons.length} person
-              {storedPersons.length !== 1 ? 's' : ''} • {templates.length}{' '}
-              template{templates.length !== 1 ? 's' : ''}
+            <div className="flex items-center space-x-4">
+              <div className="text-sm text-gray-500">
+                {storedPersons.length} person
+                {storedPersons.length !== 1 ? 's' : ''} • {templates.length}{' '}
+                template{templates.length !== 1 ? 's' : ''}
+              </div>
+              <button
+                onClick={handleOpenDocumentsFolder}
+                className="inline-flex items-center px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-gray-900 text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                title="Open Documents folder"
+              >
+                <FolderOpen className="w-4 h-4 mr-1.5" />
+                <span className="hidden sm:inline">Documents</span>
+              </button>
             </div>
           </div>
         </div>

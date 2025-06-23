@@ -1,6 +1,31 @@
+'use client';
+
 import Link from 'next/link';
 
 export default function HomePage() {
+  const handleOpenDocumentsFolder = async () => {
+    try {
+      const response = await fetch('/api/open-folder', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          folderPath: '/Users/mario/Desktop/CI-Reader/Documents',
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        alert(`Error opening Documents folder:\n${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error opening Documents folder:', error);
+      alert(`Error opening Documents folder:\n${error}`);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100">
       {/* Header */}
@@ -81,6 +106,20 @@ export default function HomePage() {
                 </svg>
                 Fill Documents
               </Link>
+
+              <button
+                onClick={handleOpenDocumentsFolder}
+                className="inline-flex items-center px-6 py-3 border border-orange-600 text-base font-medium rounded-lg text-orange-600 bg-white hover:bg-orange-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 min-w-[180px] justify-center"
+              >
+                <svg
+                  className="mr-2 -ml-1 w-5 h-5"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+                </svg>
+                Documents Folder
+              </button>
             </div>
           </div>
         </div>
