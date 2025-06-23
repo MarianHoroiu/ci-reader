@@ -200,6 +200,7 @@ export default function FileUploadPage() {
                     editable={true}
                     onClear={handleReset}
                     isNewData={true}
+                    compactLayout={true}
                     className="h-full max-h-[800px] overflow-auto"
                   />
                 </div>

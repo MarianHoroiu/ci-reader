@@ -74,7 +74,20 @@ export default function FillDocumentsPage() {
       alert(`Document "${result.filename}" has been saved to:\n${result.path}`);
     } catch (error: any) {
       console.error('Error filling document:', error);
-      alert(`Error: ${error.message}`);
+      console.log('Selected person data:', selectedPerson);
+      console.log('Selected template path:', selectedTemplate.path);
+
+      // More detailed error message
+      let errorMessage = 'Unknown error occurred';
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error.details) {
+        errorMessage = `${error.message}\nDetails: ${JSON.stringify(error.details)}`;
+      }
+
+      alert(`Error filling document:\n${errorMessage}`);
     } finally {
       setIsProcessing(false);
     }

@@ -17,7 +17,8 @@ When creating templates, you have access to the following Romanian ID data field
 - `{cnp}` - Personal Numeric Code (CNP)
 - `{nationalitate}` - Nationality (Naționalitate)
 - `{sex}` - Gender (Sex)
-- `{data_nasterii}` - Birth date (Data nașterii)
+- `{data_nasterii}` - Birth date (Data nașterii) - **Note: Not visible on ID card, derived from
+  CNP**
 - `{locul_nasterii}` - Place of birth (Locul nașterii)
 
 ### Address Information
@@ -27,8 +28,8 @@ When creating templates, you have access to the following Romanian ID data field
 ### Document Information
 
 - `{tip_document}` - Document type (Tip document)
-- `{seria}` - Series (Seria)
-- `{numar}` - Number (Numărul)
+- `{seria_buletin}` - Series (Seria) - **Note: Use seria_buletin, not seria**
+- `{numar_buletin}` - Number (Numărul) - **Note: Use numar_buletin, not numar**
 - `{data_eliberarii}` - Issue date (Data eliberării)
 - `{valabil_pana_la}` - Valid until (Valabil până la)
 - `{eliberat_de}` - Issued by (Eliberat de)
@@ -85,7 +86,7 @@ Here's a complete example for an official document:
 ```
 DECLARATION
 
-I, {prenume} {nume}, holder of Romanian ID card series {seria} number {numar},
+I, {prenume} {nume}, holder of Romanian ID card series {seria_buletin} number {numar_buletin},
 Personal Numeric Code (CNP) {cnp}, {IF nationalitate}of {nationalitate} nationality, {END-IF}
 residing at {domiciliul}, hereby declare that...
 
@@ -108,6 +109,37 @@ Signature: _______________
 2. Templates must have the `.docx` extension
 3. The application automatically scans this folder for available templates
 
+## Important Field Name Notes
+
+**⚠️ Common Field Name Errors:**
+
+- Use `{seria_buletin}` instead of `{seria}`
+- Use `{numar_buletin}` instead of `{numar}`
+- Use `{domiciliul}` instead of `{domiciliu}` or `{address}`
+- Use `{eliberat_de}` instead of `{emis_de}` or `{issued_by}`
+
+**📋 Complete Field Reference:**
+
+```
+Personal Fields:
+- {nume} - Last Name
+- {prenume} - First Name
+- {cnp} - Personal Numeric Code
+- {nationalitate} - Nationality
+- {sex} - Gender
+- {data_nasterii} - Birth Date (derived from CNP)
+- {locul_nasterii} - Birth Place
+- {domiciliul} - Address
+
+Document Fields:
+- {tip_document} - Document Type
+- {seria_buletin} - Series
+- {numar_buletin} - Number
+- {data_eliberarii} - Issue Date
+- {valabil_pana_la} - Valid Until
+- {eliberat_de} - Issued By
+```
+
 ## Tips and Best Practices
 
 1. **Test your templates** - Always test with sample data before using in production
@@ -115,6 +147,7 @@ Signature: _______________
 3. **Format dates properly** - Use JavaScript date formatting for proper display
 4. **Handle missing data** - Use default values or conditional statements
 5. **Keep it simple** - Start with basic field replacement, then add complexity
+6. **Use exact field names** - Field names are case-sensitive and must match exactly
 
 ## Troubleshooting
 
@@ -125,11 +158,19 @@ Signature: _______________
 - **Error processing**: Check that all IF statements have corresponding END-IF
 - **Smart quotes**: The system automatically handles Word's smart quotes
 
+### Field-Specific Errors:
+
+- **Series not filling**: Use `{seria_buletin}` not `{seria}`
+- **Number not filling**: Use `{numar_buletin}` not `{numar}`
+- **Address not filling**: Use `{domiciliul}` not `{domiciliu}`
+- **Issued by not filling**: Use `{eliberat_de}` not `{emis_de}`
+
 ### Error Messages:
 
 - "Template file not found": Template path is incorrect
 - "Template processing errors": Syntax errors in template commands
 - "Failed to process document": General processing error
+- "Field not found": Field name doesn't match the available fields
 
 ## Advanced Features
 
@@ -143,3 +184,27 @@ Available advanced features include:
 - Image insertion
 - HTML content embedding
 - Custom command delimiters
+
+## Testing Your Templates
+
+Before using templates in production, test them with sample data. You can use this sample data
+structure:
+
+```json
+{
+  "nume": "POPESCU",
+  "prenume": "MARIA ELENA",
+  "cnp": "2850315123456",
+  "nationalitate": "ROMÂNĂ",
+  "sex": "F",
+  "data_nasterii": "15.03.1985",
+  "locul_nasterii": "BUCUREȘTI",
+  "domiciliul": "STR. FLORILOR NR. 123, BUCUREȘTI",
+  "tip_document": "CARTE DE IDENTITATE",
+  "seria_buletin": "RX",
+  "numar_buletin": "123456",
+  "data_eliberarii": "15.03.2020",
+  "valabil_pana_la": "15.03.2030",
+  "eliberat_de": "SPCLEP BUCUREȘTI"
+}
+```

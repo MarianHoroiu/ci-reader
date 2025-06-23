@@ -4,8 +4,13 @@ import fs from 'fs';
 import path from 'path';
 
 export async function POST(request: NextRequest) {
+  let personData: any = null;
+  let templatePath: string = '';
+
   try {
-    const { personData, templatePath } = await request.json();
+    const requestBody = await request.json();
+    personData = requestBody.personData;
+    templatePath = requestBody.templatePath;
 
     // Validate inputs
     if (!personData || !templatePath) {
@@ -73,20 +78,40 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error processing document:', error);
+    console.error('Person data:', JSON.stringify(personData, null, 2));
+    console.error('Template path:', templatePath || 'undefined');
 
     // Handle template errors specifically
     if (Array.isArray(error)) {
+      console.error('Template processing errors:', error);
       return NextResponse.json(
         {
           error: 'Template processing errors',
-          details: error.map(err => err.message),
+          details: error.map(err => err.message || err.toString()),
         },
         { status: 400 }
       );
     }
 
+    // Handle docx-templates specific errors
+    if (error.message && error.message.includes('template')) {
+      return NextResponse.json(
+        {
+          error: 'Template syntax error',
+          details: error.message,
+          suggestion: 'Check your template for correct field names and syntax',
+        },
+        { status: 400 }
+      );
+    }
+
+    // Generic error
     return NextResponse.json(
-      { error: 'Failed to process document', details: error.message },
+      {
+        error: 'Failed to process document',
+        details: error.message || error.toString(),
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      },
       { status: 500 }
     );
   }

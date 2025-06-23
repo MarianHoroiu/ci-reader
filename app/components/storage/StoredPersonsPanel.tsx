@@ -248,6 +248,7 @@ export default function StoredPersonsPanel({
                 }
                 isNewData={false}
                 personId={editingPerson.id}
+                compactLayout={true}
                 className="max-w-none"
               />
             </div>

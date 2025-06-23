@@ -29,6 +29,8 @@ export interface AIExtractionResultsProps {
   className?: string;
   /** Person ID for existing persons (enables update instead of create) */
   personId?: string;
+  /** Whether to use compact horizontal layout (label and value on same line) */
+  compactLayout?: boolean;
 }
 
 /**
@@ -42,6 +44,7 @@ export default function AIExtractionResults({
   isNewData = false,
   className = '',
   personId,
+  compactLayout = false,
 }: AIExtractionResultsProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedFields, setEditedFields] = useState<RomanianIDFields>(
@@ -52,6 +55,7 @@ export default function AIExtractionResults({
   );
   const [isSaved, setIsSaved] = useState(false);
   const [hasChanges, setHasChanges] = useState(isNewData); // New data should be saveable initially
+  const [hasBeenSaved, setHasBeenSaved] = useState(false); // Track if data has been saved at least once
   const [duplicateInfo, setDuplicateInfo] = useState<{
     existingPerson: StoredPerson;
     show: boolean;
@@ -69,7 +73,7 @@ export default function AIExtractionResults({
   useEffect(() => {
     if (isNewData) {
       // For new data: keep enabled until first save, then track changes
-      if (isSaved) {
+      if (hasBeenSaved) {
         const fieldsChanged =
           JSON.stringify(editedFields) !== JSON.stringify(originalFields);
         setHasChanges(fieldsChanged);
@@ -83,7 +87,7 @@ export default function AIExtractionResults({
         JSON.stringify(editedFields) !== JSON.stringify(originalFields);
       setHasChanges(fieldsChanged);
     }
-  }, [editedFields, originalFields, isNewData, isSaved]);
+  }, [editedFields, originalFields, isNewData, hasBeenSaved]);
 
   /**
    * Handle field value change
@@ -104,22 +108,27 @@ export default function AIExtractionResults({
   const handleCancel = useCallback(() => {
     setEditedFields(originalFields);
     setIsEditing(false);
-    setHasChanges(false);
+    // For new unsaved data, keep hasChanges true to allow saving
+    setHasChanges(isNewData && !hasBeenSaved);
     window.dispatchEvent(
       new CustomEvent('editModeChanged', { detail: { isEditing: false } })
     );
-  }, [originalFields]);
+  }, [originalFields, isNewData, hasBeenSaved]);
 
   /**
    * Start editing mode
    */
   const handleStartEdit = useCallback(() => {
-    setOriginalFields(editedFields);
+    // Only update originalFields if data has been saved before
+    // This preserves the ability to save new unsaved data even after editing
+    if (hasBeenSaved) {
+      setOriginalFields(editedFields);
+    }
     setIsEditing(true);
     window.dispatchEvent(
       new CustomEvent('editModeChanged', { detail: { isEditing: true } })
     );
-  }, [editedFields]);
+  }, [editedFields, hasBeenSaved]);
 
   /**
    * Save edited fields, bypassing duplicate check if forced
@@ -180,6 +189,7 @@ export default function AIExtractionResults({
         }
         if (saveResult.success) {
           setIsSaved(true);
+          setHasBeenSaved(true); // Mark as saved at least once
           setHasChanges(false);
           setOriginalFields(editedFields); // Update original fields to current state
           setDuplicateInfo(null); // Close duplicate modal if open
@@ -360,8 +370,21 @@ export default function AIExtractionResults({
       <div className="p-4">
         <div className="grid grid-cols-1 gap-3">
           {Object.entries(editedFields).map(([fieldName, value]) => (
-            <div key={fieldName} className="space-y-1">
-              <label className="block text-xs font-medium text-gray-600">
+            <div
+              key={fieldName}
+              className={
+                compactLayout
+                  ? 'grid grid-cols-8 gap-2 items-center'
+                  : 'space-y-1'
+              }
+            >
+              <label
+                className={
+                  compactLayout
+                    ? 'col-span-2 text-xs font-medium text-gray-600 text-right'
+                    : 'block text-xs font-medium text-gray-600'
+                }
+              >
                 {formatFieldName(fieldName)}
               </label>
               {isEditing ? (
@@ -374,11 +397,23 @@ export default function AIExtractionResults({
                       e.target.value
                     )
                   }
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                  className={
+                    compactLayout
+                      ? 'col-span-6 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500'
+                      : 'w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500'
+                  }
                 />
               ) : (
-                <div className="relative">
-                  <div className="px-2 py-1.5 bg-gray-50 border border-gray-200 rounded pr-8 text-sm">
+                <div
+                  className={compactLayout ? 'relative col-span-6' : 'relative'}
+                >
+                  <div
+                    className={
+                      compactLayout
+                        ? 'px-2 py-1 bg-gray-50 border border-gray-200 rounded pr-8 text-sm'
+                        : 'px-2 py-1.5 bg-gray-50 border border-gray-200 rounded pr-8 text-sm'
+                    }
+                  >
                     <span className={value ? 'text-gray-900' : 'text-gray-400'}>
                       {value || 'Not detected'}
                     </span>
